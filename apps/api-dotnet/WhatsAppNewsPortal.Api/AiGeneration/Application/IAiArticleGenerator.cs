@@ -1,8 +1,15 @@
-using WhatsAppNewsPortal.Api.Sources.Domain;
+using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 
 namespace WhatsAppNewsPortal.Api.AiGeneration.Application;
 
+/// <summary>
+/// Generates the final article body in PT-BR using Gemini Flash.
+/// Requires a NormalizedItemDto for source content and a ClassificationResultDto for editorial metadata.
+/// </summary>
 public interface IAiArticleGenerator
 {
-    Task<string> GenerateArticleAsync(SourceItem item, ArticleMetadata metadata, CancellationToken ct = default);
+    Task<GeneratedArticleDto> GenerateArticleAsync(
+        NormalizedItemDto item,
+        ClassificationResultDto classification,
+        CancellationToken ct = default);
 }

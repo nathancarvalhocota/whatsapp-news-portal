@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture RSS 2.0 representando o WhatsApp Blog — usado em testes e modo demo -->
+<rss version="2.0">
+  <channel>
+    <title>WhatsApp Blog</title>
+    <link>https://blog.whatsapp.com</link>
+    <description>Official WhatsApp Blog</description>
+    <item>
+      <title>New Privacy Features in WhatsApp</title>
+      <link>https://blog.whatsapp.com/new-privacy-features</link>
+      <description>We are introducing new privacy controls to help you manage your experience on WhatsApp.</description>
+      <pubDate>Mon, 24 Mar 2026 12:00:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>WhatsApp Communities Update</title>
+      <link>https://blog.whatsapp.com/communities-update</link>
+      <description>Communities on WhatsApp are getting powerful new tools for group administrators.</description>
+      <pubDate>Tue, 25 Mar 2026 14:00:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>Introducing Passkey Support</title>
+      <link>https://blog.whatsapp.com/passkey-support</link>
+      <description>WhatsApp now supports passkeys for faster and more secure login on Android.</description>
+      <pubDate>Wed, 26 Mar 2026 09:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

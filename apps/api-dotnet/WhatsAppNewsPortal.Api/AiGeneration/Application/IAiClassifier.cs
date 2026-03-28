@@ -1,18 +1,13 @@
-using WhatsAppNewsPortal.Api.Articles.Domain;
-using WhatsAppNewsPortal.Api.Sources.Domain;
+using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 
 namespace WhatsAppNewsPortal.Api.AiGeneration.Application;
 
+/// <summary>
+/// Classifies a normalized item using Gemini Flash-Lite.
+/// Produces editorial metadata (slug, meta, tags, excerpt) and relevance decision.
+/// Items from beta_specialized sources must always yield EditorialType = BetaNews.
+/// </summary>
 public interface IAiClassifier
 {
-    Task<ArticleMetadata> ClassifyAsync(SourceItem item, CancellationToken ct = default);
-}
-
-public class ArticleMetadata
-{
-    public string SuggestedTitle { get; set; } = string.Empty;
-    public string Slug { get; set; } = string.Empty;
-    public string MetaDescription { get; set; } = string.Empty;
-    public string[] Tags { get; set; } = [];
-    public Common.EditorialType EditorialType { get; set; }
+    Task<ClassificationResultDto> ClassifyAsync(NormalizedItemDto item, CancellationToken ct = default);
 }

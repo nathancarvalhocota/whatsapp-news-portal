@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture Atom representando o WABetaInfo — usado em testes e modo demo -->
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>WABetaInfo</title>
+  <link href="https://wabetainfo.com"/>
+  <id>https://wabetainfo.com/</id>
+  <entry>
+    <title>WhatsApp is testing a new feature for status updates</title>
+    <link href="https://wabetainfo.com/whatsapp-is-testing-status-feature"/>
+    <id>https://wabetainfo.com/whatsapp-is-testing-status-feature</id>
+    <published>2026-03-25T10:00:00Z</published>
+    <updated>2026-03-25T10:00:00Z</updated>
+    <summary>WhatsApp is developing a new way to interact with status updates in a future update.</summary>
+  </entry>
+  <entry>
+    <title>WhatsApp beta for Android 2.26.5.10 gets redesigned chat header</title>
+    <link href="https://wabetainfo.com/whatsapp-beta-android-2-26-5-10"/>
+    <id>https://wabetainfo.com/whatsapp-beta-android-2-26-5-10</id>
+    <published>2026-03-26T08:00:00Z</published>
+    <updated>2026-03-26T08:00:00Z</updated>
+    <summary>The latest WhatsApp beta for Android introduces a redesigned chat header with new quick action buttons.</summary>
+  </entry>
+</feed>

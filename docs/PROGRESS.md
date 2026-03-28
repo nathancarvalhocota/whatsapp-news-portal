@@ -151,22 +151,73 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 07 — Definir contratos internos do pipeline
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `Ingestion/Application/DiscoveredItemDto.cs` — DTO de item descoberto pela ingestão (antes da persistência)
+  - `ContentProcessing/Application/NormalizedItemDto.cs` — DTO de item após normalização, entrada para classificação
+  - `AiGeneration/Application/ClassificationResultDto.cs` — resultado da classificação Gemini Flash-Lite (IsRelevant, EditorialType, Slug, MetaTitle, MetaDescription, Excerpt, Tags, EditorialNote)
+  - `AiGeneration/Application/GeneratedArticleDto.cs` — resultado da geração de artigo Gemini Flash (Title, Excerpt, ContentHtml, BetaDisclaimer)
+  - `Articles/Application/PublishArticleResultDto.cs` — resultado da publicação de um draft
+  - `Articles/Application/IArticlePublisher.cs` — interface do serviço de publicação
+  - `Demo/Application/DemoPipelineResultDto.cs` — resultado da execução do pipeline demo (contadores + erros)
+  - `Ingestion/Application/IIngestionAdapter.cs` — atualizado: retorna `List<DiscoveredItemDto>` em vez de `List<SourceItem>`
+  - `ContentProcessing/Application/IContentProcessor.cs` — atualizado: retorna `NormalizedItemDto`
+  - `AiGeneration/Application/IAiClassifier.cs` — atualizado: aceita `NormalizedItemDto`, retorna `ClassificationResultDto`; `ArticleMetadata` removido
+  - `AiGeneration/Application/IAiArticleGenerator.cs` — atualizado: aceita `NormalizedItemDto` + `ClassificationResultDto`, retorna `GeneratedArticleDto`
+  - `Demo/Application/IDemoPipelineService.cs` — atualizado: retorna `Task<DemoPipelineResultDto>`
+  - `WhatsAppNewsPortal.Api.Tests/PipelineContractTests.cs` — 13 novos testes unitários
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `PipelineContractTests.DiscoveredItemDto_Defaults_AreValid`
+  - `PipelineContractTests.DiscoveredItemDto_DemoFlag_SetCorrectly`
+  - `PipelineContractTests.NormalizedItemDto_JsonRoundTrip_PreservesAllFields`
+  - `PipelineContractTests.ClassificationResultDto_BetaSource_MustHaveBetaNewsType`
+  - `PipelineContractTests.ClassificationResultDto_IrrelevantItem_HasDiscardReason`
+  - `PipelineContractTests.ClassificationResultDto_JsonRoundTrip_PreservesAllFields`
+  - `PipelineContractTests.GeneratedArticleDto_BetaItem_HasBetaDisclaimer`
+  - `PipelineContractTests.GeneratedArticleDto_OfficialItem_HasNoBetaDisclaimer`
+  - `PipelineContractTests.GeneratedArticleDto_JsonRoundTrip_PreservesAllFields`
+  - `PipelineContractTests.PublishArticleResultDto_JsonRoundTrip_PreservesAllFields`
+  - `PipelineContractTests.DemoPipelineResultDto_Defaults_AreValid`
+  - `PipelineContractTests.DemoPipelineResultDto_HasErrors_TrueWhenErrorsPresent`
+  - `PipelineContractTests.DemoPipelineResultDto_JsonRoundTrip_PreservesAllFields`
+  - Resultado: **27 aprovados, 0 falhas** (13 novos + 14 anteriores)
+- **Validação manual:** `dotnet build` compila com 0 warnings/0 erros; `dotnet test` passa 27/27; todas as interfaces do pipeline agora usam DTOs dedicados em vez de entidades de domínio ou tipos anônimos; fluxo do pipeline: `IIngestionAdapter` → `DiscoveredItemDto` → [persistência] → `IContentProcessor` → `NormalizedItemDto` → `IAiClassifier` → `ClassificationResultDto` → `IAiArticleGenerator` → `GeneratedArticleDto` → [draft] → `IArticlePublisher` → `PublishArticleResultDto`
+- **Riscos/pendências:** nenhum; as implementações concretas das interfaces serão criadas nas tarefas 08–18
+- **Data de conclusão:** 2026-03-28
 
 ---
 
 ## Tarefa 08 — Implementar adapter de ingestão por RSS
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `WhatsAppNewsPortal.Api/Properties/AssemblyInfo.cs` — `InternalsVisibleTo` para o projeto de testes
+  - `WhatsAppNewsPortal.Api/Ingestion/Infrastructure/RssIngestionAdapter.cs` — implementação do adapter RSS/Atom; parsing com `XDocument`; normalização de URL; stripping do prefixo `ddd,` do RFC 2822; retorna lista vazia em falha HTTP ou XML inválido
+  - `WhatsAppNewsPortal.Api/Program.cs` — registro de `HttpClient` typed para `RssIngestionAdapter` (timeout 30s, User-Agent) + DI `IIngestionAdapter → RssIngestionAdapter`
+  - `WhatsAppNewsPortal.Api.Tests/RssIngestionAdapterTests.cs` — 16 testes unitários
+  - `samples/fixtures/rss-feed-sample.xml` — fixture RSS 2.0 (WhatsApp Blog)
+  - `samples/fixtures/atom-feed-sample.xml` — fixture Atom (WABetaInfo)
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `ParseFeed_Rss2_ExtractsCorrectNumberOfItems` — feed RSS 2.0 com 2 itens retorna 2
+  - `ParseFeed_Rss2_ExtractsTitleLinkAndDate` — título, URL e data extraídos corretamente
+  - `ParseFeed_Rss2_ExtractsDescription` — conteúdo bruto (description) extraído
+  - `ParseFeed_Rss2_PublishedAtIsUtc` — data sempre em UTC
+  - `ParseFeed_Atom_ExtractsCorrectNumberOfItems` — feed Atom com 2 entradas retorna 2
+  - `ParseFeed_Atom_ExtractsTitleLinkAndDate` — título, URL e data do Atom extraídos
+  - `ParseFeed_Atom_ExtractsSummary` — summary do Atom extraído
+  - `ParseFeed_Rss2_DeduplicatesDuplicateUrlsWithinBatch` — 3 itens com 2 URLs únicas retorna 2
+  - `NormalizeUrl_LowercasesSchemeAndHost` — esquema e host em minúsculo
+  - `NormalizeUrl_TrimsWhitespace` — whitespace removido
+  - `NormalizeUrl_ReturnsLowercasedInputForInvalidUri` — URI inválida retorna lowercased
+  - `FetchItemsAsync_ReturnsEmptyOnHttpRequestException` — falha de rede retorna lista vazia
+  - `FetchItemsAsync_ReturnsEmptyOnNonSuccessStatusCode` — HTTP 500 retorna lista vazia
+  - `FetchItemsAsync_ReturnsEmptyOnInvalidXml` — XML inválido retorna lista vazia
+  - `FetchItemsAsync_ReturnsEmptyWhenSourceHasNoFeedUrl` — source sem FeedUrl retorna vazio
+  - `FetchItemsAsync_ReturnsEmptyWhenSourceHasEmptyFeedUrl` — FeedUrl em branco retorna vazio
+  - `ParseFeed_Rss2_IsDemoItemDefaultsFalse` — IsDemoItem padrão false
+  - Resultado: **44 aprovados, 0 falhas** (17 novos + 27 anteriores)
+- **Validação manual:** `dotnet build` compila com 0 warnings/0 erros; `dotnet test` passa 44/44; adapter registrado no DI com `AddHttpClient<RssIngestionAdapter>`; fontes com FeedUrl (WhatsApp Blog e WABetaInfo) podem ser testadas contra os feeds reais chamando `FetchItemsAsync` com a `Source` correta; falhas de parsing/HTTP são silenciosas e retornam lista vazia sem derrubar o processo
+- **Riscos/pendências:** os FeedUrls reais (`https://blog.whatsapp.com/rss` e `https://wabetainfo.com/feed/`) ainda não foram validados contra os feeds ao vivo — serão testados na Tarefa 17 (orquestrador real); deduplicação contra o banco (por `canonicalUrl`) é responsabilidade da Tarefa 11
+- **Data de conclusão:** 2026-03-28
 
 ---
 
