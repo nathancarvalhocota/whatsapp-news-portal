@@ -320,12 +320,33 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 11 — Implementar deduplicação básica
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `Sources/Application/ISourceItemRepository.cs` — adicionados `ExistsByCanonicalUrlAsync` e `ExistsByContentHashAsync`
+  - `Sources/Infrastructure/EfSourceItemRepository.cs` — implementados os dois novos métodos (queries EF com AnyAsync nas colunas indexadas)
+  - `Articles/Application/IArticleRepository.cs` — adicionado `ExistsBySourceItemIdAsync`
+  - `Articles/Infrastructure/EfArticleRepository.cs` — nova implementação EF Core de `IArticleRepository` (GetById, GetBySlug, GetPublished, ExistsBySourceItemId, Add, Update)
+  - `ContentProcessing/Application/IDeduplicationService.cs` — interface + record `DeduplicationResult(IsDuplicate, Reason)`; métodos `CheckSourceItemAsync` (por canonicalUrl e/ou contentHash) e `ArticleExistsForSourceItemAsync`
+  - `ContentProcessing/Infrastructure/DeduplicationService.cs` — implementação; verifica canonicalUrl primeiro, depois contentHash; logs em Debug; delega ao repositório correspondente
+  - `Program.cs` — registro DI de `IDeduplicationService → DeduplicationService` e `IArticleRepository → EfArticleRepository`
+  - `WhatsAppNewsPortal.Api.Tests/SourceItemNormalizerTests.cs` — `FakeSourceItemRepository` atualizada com os novos métodos da interface
+  - `WhatsAppNewsPortal.Api.Tests/DeduplicationServiceTests.cs` — 11 novos testes (7 unit + 4 integration)
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `CheckSourceItem_NeitherUrlNorHash_ReturnsNotDuplicate` — sem URL nem hash → não duplicado
+  - `CheckSourceItem_CanonicalUrlExists_ReturnsDuplicate` — URL existente → duplicado com reason
+  - `CheckSourceItem_ContentHashExists_ReturnsDuplicate` — hash existente → duplicado com reason
+  - `CheckSourceItem_UrlTakesPrecedenceOverHash` — URL verificada antes do hash
+  - `CheckSourceItem_NoMatchOnEither_ReturnsNotDuplicate` — sem match → não duplicado
+  - `ArticleExistsForSourceItem_WhenArticleExists_ReturnsTrue` — article existente para sourceItemId → true
+  - `ArticleExistsForSourceItem_WhenNoArticle_ReturnsFalse` — sem article para sourceItemId → false
+  - `Integration_CanonicalUrl_Deduplication_Works` — InMemory DB: item existente bloqueado por canonicalUrl
+  - `Integration_ContentHash_Deduplication_Works` — InMemory DB: item existente bloqueado por contentHash
+  - `Integration_ArticleDuplicate_Works` — InMemory DB: article vinculado detectado
+  - `Integration_Reexecution_DoesNotCreateDuplicateSourceItem` — segunda execução detecta item já persistido
+  - Resultado: **118 aprovados, 0 falhas** (11 novos + 107 anteriores)
+- **Validação manual:** `dotnet build` compila com 0 warnings/0 erros; `dotnet test` passa 118/118; deduplicação funciona por canonicalUrl (primeiro) e contentHash (segundo); pipeline pode chamar `IDeduplicationService.CheckSourceItemAsync` antes de persistir novos SourceItems e `ArticleExistsForSourceItemAsync` antes de gerar artigo; razão do descarte fica disponível no `DeduplicationResult.Reason` para logging
+- **Riscos/pendências:** nenhum; a chamada ao serviço de deduplicação será integrada ao orquestrador (Tarefa 17) — a presente tarefa expõe a interface e testa as regras isoladamente
+- **Data de conclusão:** 2026-03-28
 
 ---
 

@@ -27,6 +27,18 @@ public class EfSourceItemRepository : ISourceItemRepository
             .AnyAsync(si => si.OriginalUrl == originalUrl, ct);
     }
 
+    public async Task<bool> ExistsByCanonicalUrlAsync(string canonicalUrl, CancellationToken ct = default)
+    {
+        return await _db.SourceItems
+            .AnyAsync(si => si.CanonicalUrl == canonicalUrl, ct);
+    }
+
+    public async Task<bool> ExistsByContentHashAsync(string contentHash, CancellationToken ct = default)
+    {
+        return await _db.SourceItems
+            .AnyAsync(si => si.ContentHash == contentHash, ct);
+    }
+
     public async Task AddAsync(SourceItem item, CancellationToken ct = default)
     {
         _db.SourceItems.Add(item);

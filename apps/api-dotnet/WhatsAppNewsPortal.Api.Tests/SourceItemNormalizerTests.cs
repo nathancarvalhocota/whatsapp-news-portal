@@ -396,6 +396,12 @@ public class SourceItemNormalizerTests
         public Task<bool> ExistsByUrlAsync(string originalUrl, CancellationToken ct = default)
             => Task.FromResult(false);
 
+        public Task<bool> ExistsByCanonicalUrlAsync(string canonicalUrl, CancellationToken ct = default)
+            => Task.FromResult(false);
+
+        public Task<bool> ExistsByContentHashAsync(string contentHash, CancellationToken ct = default)
+            => Task.FromResult(false);
+
         public Task AddAsync(SourceItem item, CancellationToken ct = default)
         {
             AddedItems.Add(item);

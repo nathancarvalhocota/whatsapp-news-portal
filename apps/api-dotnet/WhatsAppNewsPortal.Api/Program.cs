@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using WhatsAppNewsPortal.Api.Articles.Application;
+using WhatsAppNewsPortal.Api.Articles.Infrastructure;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 using WhatsAppNewsPortal.Api.ContentProcessing.Infrastructure;
@@ -39,6 +41,10 @@ builder.Services.AddScoped<HtmlIngestionAdapter>();
 // --- ContentProcessing ---
 builder.Services.AddScoped<ISourceItemRepository, EfSourceItemRepository>();
 builder.Services.AddScoped<IContentProcessor, SourceItemNormalizer>();
+builder.Services.AddScoped<IDeduplicationService, DeduplicationService>();
+
+// --- Articles ---
+builder.Services.AddScoped<IArticleRepository, EfArticleRepository>();
 
 // --- CORS ---
 var corsOrigin = builder.Configuration["CORS_ORIGIN"] ?? "http://localhost:3000";
