@@ -1,0 +1,115 @@
+# =========================
+# .NET / ASP.NET Core
+# =========================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.swp
+**/Properties/launchSettings.json
+
+# NuGet
+*.nupkg
+**/packages/
+project.lock.json
+project.fragment.lock.json
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]uild/
+[Oo]ut/
+
+# User-specific
+*.rsuser
+*.csproj.user
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+
+# EF Core migrations (manter migrations, ignorar snapshots temporários)
+*.db
+*.db-shm
+*.db-wal
+
+# =========================
+# Node.js / Next.js
+# =========================
+node_modules/
+.next/
+out/
+.vercel
+
+# Package managers
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Turbopack
+.turbo/
+
+# =========================
+# Variáveis de ambiente
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Manter os exemplos
+!.env.example
+
+# =========================
+# IDEs e editores
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Testes e cobertura
+# =========================
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
+.nyc_output/
+
+# =========================
+# Misc
+# =========================
+*.tmp
+*.temp
+*.bak
+*.cache
