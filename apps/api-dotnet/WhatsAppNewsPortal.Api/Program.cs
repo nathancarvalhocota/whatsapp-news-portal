@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
+using WhatsAppNewsPortal.Api.ContentProcessing.Application;
+using WhatsAppNewsPortal.Api.ContentProcessing.Infrastructure;
 using WhatsAppNewsPortal.Api.Ingestion.Application;
 using WhatsAppNewsPortal.Api.Ingestion.Infrastructure;
+using WhatsAppNewsPortal.Api.Sources.Application;
 using WhatsAppNewsPortal.Api.Sources.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +28,17 @@ builder.Services.AddHttpClient<RssIngestionAdapter>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
 });
 builder.Services.AddScoped<IIngestionAdapter, RssIngestionAdapter>();
+
+builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
+});
+builder.Services.AddScoped<HtmlIngestionAdapter>();
+
+// --- ContentProcessing ---
+builder.Services.AddScoped<ISourceItemRepository, EfSourceItemRepository>();
+builder.Services.AddScoped<IContentProcessor, SourceItemNormalizer>();
 
 // --- CORS ---
 var corsOrigin = builder.Configuration["CORS_ORIGIN"] ?? "http://localhost:3000";

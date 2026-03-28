@@ -222,22 +222,100 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 09 — Implementar adapter de ingestão por HTML simples
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `WhatsAppNewsPortal.Api/Ingestion/Application/IHtmlFetcher.cs` — interface para fetch de HTML com tratamento de falhas (retorna null)
+  - `WhatsAppNewsPortal.Api/Ingestion/Application/HtmlSourceParserConfig.cs` — configuração de seletores CSS por fonte (ArticleLinkSelector, ArticleLinkPattern, TitleSelector, ContentSelector, DateSelector)
+  - `WhatsAppNewsPortal.Api/Ingestion/Infrastructure/HtmlFetcher.cs` — implementação de IHtmlFetcher com HttpClient, timeout 30s e user-agent definido
+  - `WhatsAppNewsPortal.Api/Ingestion/Infrastructure/HtmlIngestionAdapter.cs` — adapter IIngestionAdapter para fontes sem RSS; parsing com AngleSharp e seletores CSS configuráveis; configs pré-definidas para business.whatsapp.com e developers.facebook.com; métodos ExtractContent e ExtractTitle para extração de conteúdo bruto
+  - `WhatsAppNewsPortal.Api/WhatsAppNewsPortal.Api.csproj` — adicionado pacote AngleSharp 1.4.0 (justificado: parser por seletores CSS configuráveis conforme requisito da tarefa)
+  - `WhatsAppNewsPortal.Api/Program.cs` — registro DI de IHtmlFetcher→HtmlFetcher (HttpClient typed, timeout 30s, User-Agent) e HtmlIngestionAdapter
+  - `samples/fixtures/whatsapp-business-blog-listing.html` — fixture HTML de página de listagem do WhatsApp Business Blog
+  - `samples/fixtures/whatsapp-business-blog-article.html` — fixture HTML de página de artigo individual
+  - `WhatsAppNewsPortal.Api.Tests/HtmlIngestionAdapterTests.cs` — 27 testes unitários
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `FetchItemsAsync_ReturnsEmptyWhenSourceHasFeedUrl` — fonte com FeedUrl é ignorada (tratada pelo RSS adapter)
+  - `FetchItemsAsync_ReturnsEmptyOnHttpFailure` — falha de rede retorna lista vazia
+  - `FetchItemsAsync_ReturnsEmptyOnNonSuccessStatusCode` — HTTP 500 retorna lista vazia
+  - `FetchItemsAsync_ReturnsEmptyOnInvalidHtml` — HTML vazio retorna lista vazia
+  - `FetchItemsAsync_ExtractsArticleLinksFromBusinessBlog` — extrai 3 links de artigos da fixture de listagem
+  - `FetchItemsAsync_ExtractsTitlesFromListingPage` — extrai títulos corretamente dos links
+  - `FetchItemsAsync_ResolvesRelativeUrls` — URLs relativas resolvidas para absolutas
+  - `FetchItemsAsync_FiltersOutNonBlogLinks` — links de navegação/footer filtrados pelo padrão regex
+  - `FetchItemsAsync_SetsSourceIdOnAllItems` — SourceId preenchido em todos os itens
+  - `FetchItemsAsync_IsDemoItemDefaultsFalse` — IsDemoItem padrão false
+  - `ParseListingPage_DeduplicatesDuplicateLinks` — URLs duplicadas deduplicadas no batch
+  - `ParseListingPage_DefaultConfig_ExtractsAllAnchorLinks` — config default extrai todos os links válidos
+  - `ResolveUrl_AbsoluteUrl_ReturnedAsIs` — URL absoluta mantida
+  - `ResolveUrl_RelativeUrl_ResolvedAgainstBase` — URL relativa resolvida contra base
+  - `ResolveUrl_RelativeUrl_WithoutBase_ReturnsNull` — URL relativa sem base retorna null
+  - `ExtractContent_ExtractsArticleText` — extrai conteúdo de `<article>` via seletor
+  - `ExtractContent_FallsBackToBody_WhenNoMatchingSelector` — fallback para body text
+  - `ExtractContent_SkipsEmptyElements` — pula elementos vazios e tenta próximo seletor
+  - `ExtractTitle_ExtractsH1` — extrai título de `<h1>`
+  - `ExtractTitle_FallsBackToPageTitle` — fallback para `<title>` da página
+  - `ExtractTitle_MultipleSelectors_TriesInOrder` — múltiplos seletores testados em ordem
+  - `GetConfigForSource_ReturnsConfigForBusinessBlog` — config específica para business.whatsapp.com
+  - `GetConfigForSource_ReturnsConfigForDevDocs` — config específica para developers.facebook.com
+  - `GetConfigForSource_ReturnsDefaultForUnknownSource` — config default para fontes desconhecidas
+  - `HtmlFetcher_ReturnsHtmlOnSuccess` — retorna HTML em sucesso
+  - `HtmlFetcher_ReturnsNullOnNetworkFailure` — retorna null em falha de rede
+  - `HtmlFetcher_ReturnsNullOnNonSuccessStatus` — retorna null em HTTP 404
+  - Resultado: **71 aprovados, 0 falhas** (27 novos + 44 anteriores)
+- **Validação manual:** `dotnet build` compila com 0 warnings/0 erros; `dotnet test` passa 71/71; adapter registrado no DI com `AddHttpClient<IHtmlFetcher, HtmlFetcher>` (timeout 30s, User-Agent); fontes sem FeedUrl (WhatsApp Business Blog e API Documentation) usarão o HtmlIngestionAdapter; fontes com FeedUrl continuam usando o RssIngestionAdapter; falhas de parsing/HTTP retornam lista vazia sem derrubar o processo; métodos `ExtractContent` e `ExtractTitle` disponíveis para uso na etapa de normalização (Tarefa 10)
+- **Riscos/pendências:** os seletores CSS pré-configurados para business.whatsapp.com e developers.facebook.com são estimativas baseadas em estrutura HTML típica — podem precisar de ajuste após validação contra as páginas reais (Tarefa 17); AngleSharp 1.4.0 adicionado como dependência (única lib nova, justificada pelo requisito de parser com seletores CSS); a seleção entre RssIngestionAdapter e HtmlIngestionAdapter por fonte será orquestrada na Tarefa 17
+- **Data de conclusão:** 2026-03-28
 
 ---
 
 ## Tarefa 10 — Implementar normalização de SourceItem
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `WhatsAppNewsPortal.Api/ContentProcessing/Infrastructure/SourceItemNormalizer.cs` — implementação de `IContentProcessor`; canonicalização de URL (lowercase scheme/host, remove fragmento, remove porta default, remove trailing slash, ordena query params); limpeza de texto (strip HTML, collapse whitespace, decode entidades HTML); hash SHA256 do conteúdo normalizado; validação de conteúdo vazio/curto/título vazio; itens inválidos vão para `Failed` com mensagem de erro; itens válidos ficam em `Processing`
+  - `WhatsAppNewsPortal.Api/Sources/Infrastructure/EfSourceItemRepository.cs` — implementação EF Core de `ISourceItemRepository` (GetById com Include Source, ExistsByUrl, Add, Update com SaveChanges)
+  - `WhatsAppNewsPortal.Api/Program.cs` — registro DI de `ISourceItemRepository → EfSourceItemRepository` e `IContentProcessor → SourceItemNormalizer`
+  - `WhatsAppNewsPortal.Api.Tests/SourceItemNormalizerTests.cs` — 36 testes unitários com FakeSourceItemRepository
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `CanonicalizeUrl_LowercasesSchemeAndHost` — scheme e host em minúsculo
+  - `CanonicalizeUrl_RemovesTrailingSlash` — trailing slash removido
+  - `CanonicalizeUrl_KeepsRootSlash` — slash raiz mantido
+  - `CanonicalizeUrl_RemovesFragment` — fragmento (#section) removido
+  - `CanonicalizeUrl_RemovesDefaultHttpPort` — porta 80 removida
+  - `CanonicalizeUrl_RemovesDefaultHttpsPort` — porta 443 removida
+  - `CanonicalizeUrl_KeepsNonDefaultPort` — porta não-padrão mantida
+  - `CanonicalizeUrl_SortsQueryParameters` — query params ordenados alfabeticamente
+  - `CanonicalizeUrl_TrimsWhitespace` — whitespace removido
+  - `CanonicalizeUrl_EmptyUrl_ReturnsEmpty` — URL vazia retorna string vazia
+  - `CanonicalizeUrl_InvalidUri_ReturnsLowercased` — URI inválida retorna lowercased
+  - `ComputeHash_ReturnsSha256Hex` — hash SHA256 correto (verificado contra valor conhecido)
+  - `ComputeHash_DifferentInputs_DifferentHashes` — inputs diferentes geram hashes diferentes
+  - `ComputeHash_SameInput_SameHash` — mesmo input gera mesmo hash
+  - `CleanText_RemovesHtmlTags` — tags HTML removidas
+  - `CleanText_CollapsesWhitespace` — múltiplos espaços colapsados
+  - `CleanText_CollapsesNewlines` — newlines e tabs colapsados
+  - `CleanText_DecodesHtmlEntities` — entidades HTML decodificadas (&amp; &lt; &gt; &quot; &#39;)
+  - `CleanText_TrimsResult` — resultado trimado
+  - `CleanText_NullOrWhitespace_ReturnsNull` — null/vazio retorna null
+  - `CleanText_DecodesNbsp` — &nbsp; decodificado para espaço
+  - `NormalizeAsync_ValidItem_SetsProcessingStatus` — item válido vai para Processing
+  - `NormalizeAsync_ValidItem_SetsCanonicalUrl` — CanonicalUrl preenchida
+  - `NormalizeAsync_ValidItem_ComputesContentHash` — ContentHash de 64 chars (SHA256 hex)
+  - `NormalizeAsync_ValidItem_CleansAndPersistsNormalizedContent` — conteúdo limpo persistido
+  - `NormalizeAsync_ValidItem_PersistsUpdate` — repository.UpdateAsync chamado
+  - `NormalizeAsync_ValidItem_ReturnsDtoWithAllFields` — DTO com todos os campos preenchidos
+  - `NormalizeAsync_EmptyContent_SetsFailedStatus` — conteúdo vazio → Failed
+  - `NormalizeAsync_WhitespaceOnlyContent_SetsFailedStatus` — whitespace only → Failed
+  - `NormalizeAsync_EmptyTitle_SetsFailedStatus` — título vazio → Failed
+  - `NormalizeAsync_TooShortContent_SetsFailedStatus` — conteúdo < 20 chars → Failed
+  - `NormalizeAsync_FailedItem_PersistsWithErrorMessage` — item falho persistido com ErrorMessage
+  - `NormalizeAsync_FailedItem_ReturnsDtoWithEmptyContentAndHash` — DTO de falha com content/hash vazios
+  - `NormalizeAsync_HtmlContent_StripsTagsBeforeHashing` — HTML stripped antes do hash
+  - `NormalizeAsync_SameContent_ProducesSameHash` — mesmo conteúdo → mesmo hash
+  - `NormalizeAsync_NullSource_DefaultsToOfficialSourceType` — Source null → SourceType.Official
+  - Resultado: **107 aprovados, 0 falhas** (36 novos + 71 anteriores)
+- **Validação manual:** `dotnet build` compila com 0 warnings/0 erros; `dotnet test` passa 107/107; normalizer registrado no DI como `IContentProcessor → SourceItemNormalizer`; repository registrado como `ISourceItemRepository → EfSourceItemRepository`; fluxo: SourceItem entra com status Discovered → normalizer canonicaliza URL, limpa texto, calcula hash → se válido, status vai para Processing e item é persistido; se inválido (conteúdo vazio, título vazio, conteúdo < 20 chars), status vai para Failed com ErrorMessage descritivo
+- **Riscos/pendências:** nenhum; a deduplicação por canonicalUrl e contentHash será implementada na Tarefa 11; a integração com o orquestrador será feita na Tarefa 17
+- **Data de conclusão:** 2026-03-28
 
 ---
 
