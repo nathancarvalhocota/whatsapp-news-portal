@@ -90,7 +90,7 @@ Separação mínima: Domain, Application, Infrastructure, Api (ou pastas por mó
 ## Regras de trabalho para o agente
 
 1. Executar UMA tarefa por vez, conforme `/docs/04-plano-de-implementacao.md`.
-2. SEMPRE consultar `/docs/04-plano-de-implementacao.md` antes de iniciar qualquer tarefa.
+2. A tarefa a ser executada será fornecida diretamente no prompt. O plano completo está em /docs/04-plano-de-implementacao.md apenas para referência quando necessário Não leia o arquivo inteiro a menos que seja solicitado.
 3. SEMPRE atualizar `/docs/PROGRESS.md` ao concluir cada tarefa.
 4. Não antecipar tarefas futuras sem necessidade explícita.
 5. Não redesenhar a arquitetura definida nos docs.
