@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using WhatsAppNewsPortal.Api.AiGeneration.Application;
+using WhatsAppNewsPortal.Api.AiGeneration.Infrastructure;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Articles.Infrastructure;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
@@ -45,6 +47,24 @@ builder.Services.AddScoped<IDeduplicationService, DeduplicationService>();
 
 // --- Articles ---
 builder.Services.AddScoped<IArticleRepository, EfArticleRepository>();
+
+// --- AI Generation (Gemini) ---
+builder.Services.Configure<GeminiSettings>(settings =>
+{
+    settings.ApiKey = builder.Configuration["GEMINI_API_KEY"] ?? "";
+    settings.ClassificationModel = builder.Configuration["GEMINI_CLASSIFICATION_MODEL"] ?? "gemini-2.5-flash-lite";
+    settings.GenerationModel = builder.Configuration["GEMINI_GENERATION_MODEL"] ?? "gemini-2.5-flash";
+    if (int.TryParse(builder.Configuration["GEMINI_TIMEOUT_SECONDS"], out var timeout))
+        settings.TimeoutSeconds = timeout;
+});
+
+var geminiTimeout = int.TryParse(builder.Configuration["GEMINI_TIMEOUT_SECONDS"], out var gt) ? gt : 60;
+builder.Services.AddHttpClient<ITextGenerationProvider, GeminiTextGenerationProvider>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(geminiTimeout);
+});
+builder.Services.AddScoped<IAiClassifier, GeminiClassifier>();
+builder.Services.AddScoped<IAiArticleGenerator, GeminiArticleGenerator>();
 
 // --- CORS ---
 var corsOrigin = builder.Configuration["CORS_ORIGIN"] ?? "http://localhost:3000";

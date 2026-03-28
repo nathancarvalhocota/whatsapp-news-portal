@@ -351,12 +351,37 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 12 — Implementar cliente Gemini com abstração própria
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Application/ITextGenerationProvider.cs` — interface genérica de geração de texto (provider-agnostic)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Application/TextGenerationRequest.cs` — request model com Model, Prompt, SystemInstruction, Temperature, JsonMode
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Application/TextGenerationResponse.cs` — response model com Success, Text, ErrorMessage, FinishReason
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/GeminiSettings.cs` — configuração (ApiKey, ClassificationModel, GenerationModel, TimeoutSeconds, BaseUrl)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/GeminiTextGenerationProvider.cs` — implementação Gemini REST API (v1beta/generateContent)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/GeminiClassifier.cs` — IAiClassifier via gemini-2.5-flash-lite com parsing JSON e enforcement de regras editoriais
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/GeminiArticleGenerator.cs` — IAiArticleGenerator via gemini-2.5-flash com prompts PT-BR e enforcement beta/oficial
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/OpenAiTextGenerationProvider.cs` — contrato OpenAI (stub NotImplementedException) + OpenAiSettings
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — DI: GeminiSettings, HttpClient, ITextGenerationProvider, IAiClassifier, IAiArticleGenerator
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/AiGenerationTests.cs` — 22 testes unitários
+- **Testes criados/executados:** 22 novos testes (141 total, todos passando)
+  - Classificação: parsing válido, enforcement BetaNews para fonte beta, preservação de editorialNote, item irrelevante, modelo correto, falha do provider, JSON inválido
+  - Geração de artigo: parsing válido, enforcement betaDisclaimer, limpeza betaDisclaimer para oficial, preservação betaDisclaimer, modelo correto, falha do provider, JSON inválido
+  - Parsing estruturado: ClassificationResultDto e GeneratedArticleDto deserialização camelCase, campos mínimos
+  - Contratos: TextGenerationRequest defaults, TextGenerationResponse success/failure, OpenAI NotImplemented, GeminiSettings defaults, OpenAiSettings defaults
 - **Validação manual:**
+  - `dotnet build` compila sem erros nem warnings
+  - `dotnet test` — 141 testes aprovados, 0 falhas
+  - Provider isolado via ITextGenerationProvider (fácil trocar implementação)
+  - Sem chave hardcoded (via GEMINI_API_KEY env var)
+  - Tratamento de erro: timeout, HTTP errors, JSON parsing, resposta vazia
+  - Logs seguros (trunca resposta de erro, não loga API key)
+  - Respostas parseadas com JsonStringEnumConverter para enums
+  - Regras editoriais enforcement no código (BetaNews para beta_specialized, betaDisclaimer obrigatório)
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - Configuração manual necessária: definir `GEMINI_API_KEY` como variável de ambiente (ou user-secrets em dev)
+  - Opcionais: `GEMINI_CLASSIFICATION_MODEL`, `GEMINI_GENERATION_MODEL`, `GEMINI_TIMEOUT_SECONDS`
+  - Teste de integração real com a API Gemini não incluído (evitar dependência de API em CI)
+- **Data de conclusão:** 2026-03-28
 
 ---
 
