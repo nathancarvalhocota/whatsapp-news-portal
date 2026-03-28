@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WhatsAppNewsPortal.Api.Tests/WhatsAppNewsPortal.Api.Tests.csproj" />
+  <Project Path="WhatsAppNewsPortal.Api/WhatsAppNewsPortal.Api.csproj" />
+</Solution>
