@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5074';
-const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET ?? 'hackathon2025';
 
 interface Draft {
   id: string;
@@ -72,8 +71,13 @@ export default function AdminPage() {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [publishResults, setPublishResults] = useState<Record<string, string>>({});
 
-  function handleLogin() {
-    if (password === ADMIN_SECRET) {
+  async function handleLogin() {
+    const res = await fetch('/api/admin/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
       setAuthenticated(true);
       setAuthError('');
     } else {
