@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
@@ -10,6 +9,8 @@ namespace WhatsAppNewsPortal.Api.Pipeline.Infrastructure;
 /// <summary>
 /// Background job que executa o pipeline de descoberta e geração de artigos periodicamente.
 /// Roda uma vez no startup (se configurado) e depois no intervalo definido em PipelineJobSettings.
+/// O singleton PipelineJobSettings é compartilhado com os endpoints /api/settings/pipeline,
+/// permitindo alteração em runtime.
 /// </summary>
 public class ContentPipelineJob : BackgroundService
 {
@@ -19,11 +20,11 @@ public class ContentPipelineJob : BackgroundService
 
     public ContentPipelineJob(
         IServiceProvider serviceProvider,
-        IOptions<PipelineJobSettings> settings,
+        PipelineJobSettings settings,
         ILogger<ContentPipelineJob> logger)
     {
         _serviceProvider = serviceProvider;
-        _settings = settings.Value;
+        _settings = settings;
         _logger = logger;
     }
 

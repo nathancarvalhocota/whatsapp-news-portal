@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using WhatsAppNewsPortal.Api.AiGeneration.Application;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Common;
@@ -75,10 +74,10 @@ public class PipelineOrchestratorTests : IDisposable
             logRepo,
             Lf.CreateLogger<ArticleGenerationStep>());
 
-        var jobSettings = Options.Create(new PipelineJobSettings
+        var jobSettings = new PipelineJobSettings
         {
             MinPublishedDate = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
+        };
 
         return new PipelineOrchestrator(
             sourceRepo,

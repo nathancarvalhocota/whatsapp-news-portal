@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
@@ -19,10 +18,10 @@ public class PipelineOrchestrator(
     IClassificationStep classificationStep,
     IArticleGenerationStep articleGenerationStep,
     IProcessingLogRepository processingLogRepository,
-    IOptions<PipelineJobSettings> jobSettings,
+    PipelineJobSettings jobSettings,
     ILogger<PipelineOrchestrator> logger) : IPipelineOrchestrator
 {
-    private readonly DateTime _minPublishedDate = jobSettings.Value.MinPublishedDate;
+    private readonly DateTime _minPublishedDate = jobSettings.MinPublishedDate;
     public async Task<PipelineRunResultDto> RunAsync(CancellationToken ct = default)
     {
         var result = new PipelineRunResultDto { StartedAt = DateTime.UtcNow };

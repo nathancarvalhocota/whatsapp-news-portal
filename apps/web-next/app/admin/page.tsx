@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5074';
 const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET ?? 'hackathon2025';
@@ -27,6 +27,12 @@ interface DemoResult {
   executedAt: string;
 }
 
+interface PipelineSettings {
+  intervalMinutes: number;
+  minPublishedDate: string;
+  autoPublishDrafts: boolean;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     Draft: 'bg-yellow-100 text-yellow-800',
@@ -46,7 +52,13 @@ export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Pipeline real
+  // Settings
+  const [settings, setSettings] = useState<PipelineSettings | null>(null);
+  const [settingsForm, setSettingsForm] = useState({ intervalMinutes: '', minPublishedDate: '', autoPublishDrafts: true });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState('');
+
   // Demo pipeline
   const [demoUrl, setDemoUrl] = useState('');
   const [demoLoading, setDemoLoading] = useState(false);
@@ -64,11 +76,29 @@ export default function AdminPage() {
     if (password === ADMIN_SECRET) {
       setAuthenticated(true);
       setAuthError('');
-      loadDrafts();
     } else {
       setAuthError('Senha incorreta.');
     }
   }
+
+  const loadSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/settings/pipeline`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: PipelineSettings = await res.json();
+      setSettings(data);
+      setSettingsForm({
+        intervalMinutes: String(data.intervalMinutes),
+        minPublishedDate: data.minPublishedDate,
+        autoPublishDrafts: data.autoPublishDrafts,
+      });
+    } catch {
+      setSettingsMsg('Erro ao carregar configurações.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
 
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
@@ -83,6 +113,38 @@ export default function AdminPage() {
       setDraftsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (authenticated) {
+      loadSettings();
+      loadDrafts();
+    }
+  }, [authenticated, loadSettings, loadDrafts]);
+
+  async function saveSettings() {
+    setSettingsSaving(true);
+    setSettingsMsg('');
+    try {
+      const res = await fetch(`${API_URL}/api/settings/pipeline`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intervalMinutes: settingsForm.intervalMinutes ? Number(settingsForm.intervalMinutes) : undefined,
+          minPublishedDate: settingsForm.minPublishedDate || undefined,
+          autoPublishDrafts: settingsForm.autoPublishDrafts,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setSettings(data);
+      setSettingsMsg('Salvo com sucesso.');
+      setTimeout(() => setSettingsMsg(''), 3000);
+    } catch (e) {
+      setSettingsMsg(`Erro: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
 
   async function runDemo() {
     if (!demoUrl.trim()) return;
@@ -161,6 +223,73 @@ export default function AdminPage() {
         </button>
       </div>
 
+      {/* Pipeline Settings */}
+      <section className="border border-gray-200 rounded-xl p-5">
+        <h2 className="font-semibold text-gray-800 mb-3">Configurações do Pipeline</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Valores atuais do job que roda periodicamente. Alterações aplicam no próximo ciclo.
+        </p>
+        {settingsLoading ? (
+          <p className="text-sm text-gray-400">Carregando...</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Intervalo (minutos)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={settingsForm.intervalMinutes}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, intervalMinutes: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Data mínima (corte)
+                </label>
+                <input
+                  type="date"
+                  value={settingsForm.minPublishedDate}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, minPublishedDate: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settingsForm.autoPublishDrafts}
+                onChange={(e) => setSettingsForm((f) => ({ ...f, autoPublishDrafts: e.target.checked }))}
+                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span className="text-sm text-gray-700">Publicar automaticamente novos artigos</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveSettings}
+                disabled={settingsSaving}
+                className="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                {settingsSaving ? 'Salvando...' : 'Salvar'}
+              </button>
+              {settingsMsg && (
+                <span className={`text-sm ${settingsMsg.startsWith('Erro') ? 'text-red-600' : 'text-green-600'}`}>
+                  {settingsMsg}
+                </span>
+              )}
+              {settings && (
+                <span className="text-xs text-gray-400 ml-auto">
+                  Atual: {settings.intervalMinutes}min / {settings.minPublishedDate} / {settings.autoPublishDrafts ? 'auto-pub' : 'manual'}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Demo Pipeline */}
       <section className="border border-gray-200 rounded-xl p-5">
         <h2 className="font-semibold text-gray-800 mb-3">Demo Pipeline</h2>
@@ -181,7 +310,7 @@ export default function AdminPage() {
             disabled={demoLoading || !demoUrl.trim()}
             className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap"
           >
-            {demoLoading ? 'Rodando…' : 'Rodar Demo'}
+            {demoLoading ? 'Rodando...' : 'Rodar Demo'}
           </button>
         </div>
         {demoError && (
@@ -210,7 +339,7 @@ export default function AdminPage() {
                 disabled={publishingId === demoResult.articleId}
                 className="mt-2 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition-colors"
               >
-                {publishingId === demoResult.articleId ? 'Publicando…' : 'Publicar este artigo'}
+                {publishingId === demoResult.articleId ? 'Publicando...' : 'Publicar este artigo'}
               </button>
             )}
             {demoResult.articleId && publishResults[demoResult.articleId] && (
@@ -231,7 +360,7 @@ export default function AdminPage() {
             disabled={draftsLoading}
             className="text-xs text-gray-500 hover:text-green-700 transition-colors disabled:opacity-50"
           >
-            {draftsLoading ? 'Carregando…' : 'Atualizar'}
+            {draftsLoading ? 'Carregando...' : 'Atualizar'}
           </button>
         </div>
         {draftsError && <p className="text-red-600 text-sm">{draftsError}</p>}
@@ -267,7 +396,7 @@ export default function AdminPage() {
                       disabled={publishingId === draft.id}
                       className="shrink-0 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition-colors"
                     >
-                      {publishingId === draft.id ? '…' : 'Publicar'}
+                      {publishingId === draft.id ? '...' : 'Publicar'}
                     </button>
                   )}
                 </li>

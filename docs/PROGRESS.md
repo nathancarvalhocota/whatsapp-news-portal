@@ -126,22 +126,28 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ## Tarefa 25 — Implementar botão ou rota operacional de demo/admin mínima
 - **Status:** concluída
 - **Arquivos criados/alterados:**
-  - `apps/web-next/app/admin/page.tsx` — página `/admin` (client component) com gate de senha, 3 seções: Pipeline Real, Demo Pipeline (URL input + reset=false), Drafts pendentes
-  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — adicionado `GET /api/articles/drafts` para listar drafts pendentes
+  - `apps/web-next/app/admin/page.tsx` — página `/admin` (client component) com gate de senha, 3 seções: Configurações do Pipeline, Demo Pipeline (URL input + reset=false), Drafts pendentes
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — `GET /api/articles/drafts`, `GET /api/settings/pipeline`, `PUT /api/settings/pipeline`; `PipelineJobSettings` registrado como singleton mutável (não mais IOptions)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/ContentPipelineJob.cs` — injeção direta de `PipelineJobSettings` (singleton)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/PipelineOrchestrator.cs` — injeção direta de `PipelineJobSettings` (singleton)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/PipelineOrchestratorTests.cs` — removido `Options.Create` wrapper
+  - `apps/web-next/app/layout.tsx` — `body` com `flex flex-col`, `main` com `flex-1` (corrige footer flutuante em páginas curtas)
   - `apps/web-next/.env.local` — adicionada `NEXT_PUBLIC_ADMIN_SECRET=hackathon2025`
   - `apps/web-next/.env.example` — documentada variável `NEXT_PUBLIC_ADMIN_SECRET`
 - **Testes criados/executados:**
   - `npm run build` — `/admin` compilada como Static (○), sem erros
-  - `dotnet build` — 0 erros, 0 avisos
+  - `dotnet build` — 0 erros, 0 avisos (solução completa incluindo testes)
 - **Validação manual:**
   - Acesso a `/admin` apresenta gate de senha (senha: `hackathon2025`)
-  - **Pipeline Real**: botão dispara `POST /api/pipeline/run`, exibe contadores (processed/generated/failed/skipped)
+  - **Configurações do Pipeline**: lê valores atuais via `GET /api/settings/pipeline`; formulário com intervalo (min), data mínima (date picker), auto-publish (checkbox); salva via `PUT /api/settings/pipeline`; alterações refletem no próximo ciclo do background job
   - **Demo Pipeline**: campo URL + botão "Rodar Demo" → `POST /api/pipeline/run-demo` com `reset: false`; resultado inline com status, slug, article ID e botão "Publicar este artigo" se status=Draft
   - **Drafts pendentes**: lista todos os drafts via `GET /api/articles/drafts`; botão "Publicar" por item → `POST /api/articles/{id}/publish`; link para o artigo publicado após sucesso
+  - Footer agora gruda no final da viewport em páginas com pouco conteúdo (flex-col + flex-1)
   - Sem acesso manual ao banco necessário
 - **Riscos/pendências:**
   - `NEXT_PUBLIC_ADMIN_SECRET` fica exposto no bundle client-side — proteção suficiente para hackathon; não usar em produção real
   - Definir `NEXT_PUBLIC_ADMIN_SECRET` na Vercel (env var) antes do deploy
+  - Alterações de settings são em memória — reinício do servidor volta aos valores das env vars
 - **Data de conclusão:** 2026-03-29
 
 ---

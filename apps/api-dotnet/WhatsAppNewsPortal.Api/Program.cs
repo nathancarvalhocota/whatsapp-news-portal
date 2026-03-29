@@ -47,29 +47,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // --- HTTP Clients ---
-// Headers completos de navegador para evitar bloqueios 400/403 em sites com proteção anti-bot
-const string BrowserUserAgent =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-
-void ConfigureBrowserHeaders(HttpClient client)
+builder.Services.AddHttpClient<RssIngestionAdapter>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Connection", "keep-alive");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Dest", "document");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Site", "none");
-    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-User", "?1");
-}
-
-builder.Services.AddHttpClient<RssIngestionAdapter>(ConfigureBrowserHeaders);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
+});
 builder.Services.AddScoped<IIngestionAdapter, RssIngestionAdapter>();
 
-builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(ConfigureBrowserHeaders);
+builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
+});
 builder.Services.AddScoped<HtmlIngestionAdapter>();
 
 // --- Sources ---
@@ -107,28 +96,26 @@ builder.Services.AddScoped<IAiArticleGenerator, GeminiArticleGenerator>();
 
 // --- Pipeline ---
 // ============================================================
-// CONFIGURAÇÃO DO BACKGROUND JOB — MODIFIQUE AQUI OU VIA ENV VARS
+// CONFIGURAÇÃO DO BACKGROUND JOB — MODIFIQUE AQUI, VIA ENV VARS OU VIA /api/settings/pipeline
+// Registrado como singleton mutável: alterações via API refletem no próximo ciclo do job.
 // ============================================================
-builder.Services.Configure<PipelineJobSettings>(settings =>
+var pipelineSettings = new PipelineJobSettings();
 {
-    // Intervalo: dev = 5min, prod = 720min (12h). Env var: PIPELINE_INTERVAL_MINUTES
     var defaultInterval = builder.Environment.IsDevelopment() ? 5 : 720;
-    settings.IntervalMinutes = int.TryParse(builder.Configuration["PIPELINE_INTERVAL_MINUTES"], out var interval)
+    pipelineSettings.IntervalMinutes = int.TryParse(builder.Configuration["PIPELINE_INTERVAL_MINUTES"], out var interval)
         ? interval : defaultInterval;
 
-    // Executar ao iniciar? Env var: PIPELINE_RUN_ON_STARTUP (default: true)
-    settings.RunOnStartup = !bool.TryParse(builder.Configuration["PIPELINE_RUN_ON_STARTUP"], out var runOnStartup)
+    pipelineSettings.RunOnStartup = !bool.TryParse(builder.Configuration["PIPELINE_RUN_ON_STARTUP"], out var runOnStartup)
         || runOnStartup;
 
-    // Data mínima dos posts (não busca posts anteriores a esta data). Env var: PIPELINE_MIN_DATE
-    settings.MinPublishedDate = DateTime.TryParse(builder.Configuration["PIPELINE_MIN_DATE"], out var minDate)
+    pipelineSettings.MinPublishedDate = DateTime.TryParse(builder.Configuration["PIPELINE_MIN_DATE"], out var minDate)
         ? DateTime.SpecifyKind(minDate, DateTimeKind.Utc)
         : new DateTime(2026, 3, 28, 0, 0, 0, DateTimeKind.Utc);
 
-    // Auto-publicar drafts após pipeline? Env var: PIPELINE_AUTO_PUBLISH (default: true)
-    settings.AutoPublishDrafts = !bool.TryParse(builder.Configuration["PIPELINE_AUTO_PUBLISH"], out var autoPublish)
+    pipelineSettings.AutoPublishDrafts = !bool.TryParse(builder.Configuration["PIPELINE_AUTO_PUBLISH"], out var autoPublish)
         || autoPublish;
-});
+}
+builder.Services.AddSingleton(pipelineSettings);
 builder.Services.AddScoped<IPipelineOrchestrator, PipelineOrchestrator>();
 builder.Services.AddHostedService<ContentPipelineJob>();
 
@@ -316,6 +303,41 @@ app.MapPost("/api/pipeline/run", async (IPipelineOrchestrator orchestrator, Canc
     return Results.Ok(result);
 });
 
+// --- Pipeline settings (admin) ---
+app.MapGet("/api/settings/pipeline", (PipelineJobSettings settings) =>
+{
+    return Results.Ok(new
+    {
+        intervalMinutes = settings.IntervalMinutes,
+        minPublishedDate = settings.MinPublishedDate.ToString("yyyy-MM-dd"),
+        autoPublishDrafts = settings.AutoPublishDrafts
+    });
+});
+
+app.MapPut("/api/settings/pipeline", (PipelineSettingsUpdateRequest req, PipelineJobSettings settings) =>
+{
+    if (req.IntervalMinutes.HasValue)
+    {
+        if (req.IntervalMinutes.Value < 1) return Results.BadRequest(new { error = "intervalMinutes deve ser >= 1" });
+        settings.IntervalMinutes = req.IntervalMinutes.Value;
+    }
+    if (req.MinPublishedDate is not null)
+    {
+        if (!DateTime.TryParse(req.MinPublishedDate, out var parsed))
+            return Results.BadRequest(new { error = "minPublishedDate inválida (use yyyy-MM-dd)" });
+        settings.MinPublishedDate = DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+    }
+    if (req.AutoPublishDrafts.HasValue)
+        settings.AutoPublishDrafts = req.AutoPublishDrafts.Value;
+
+    return Results.Ok(new
+    {
+        intervalMinutes = settings.IntervalMinutes,
+        minPublishedDate = settings.MinPublishedDate.ToString("yyyy-MM-dd"),
+        autoPublishDrafts = settings.AutoPublishDrafts
+    });
+});
+
 // --- Demo pipeline ---
 app.MapPost("/api/pipeline/run-demo", async (DemoPipelineRequest request, IDemoPipelineService demo, CancellationToken ct) =>
 {
@@ -411,3 +433,10 @@ app.Run();
 
 // Necessário para WebApplicationFactory nos testes de integração
 public partial class Program { }
+
+public class PipelineSettingsUpdateRequest
+{
+    public int? IntervalMinutes { get; set; }
+    public string? MinPublishedDate { get; set; }
+    public bool? AutoPublishDrafts { get; set; }
+}

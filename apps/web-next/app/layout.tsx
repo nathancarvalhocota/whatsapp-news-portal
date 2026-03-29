@@ -34,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={cn('font-sans', geist.variable)}>
-      <body className="min-h-screen bg-white text-gray-900 antialiased">
+      <body className="min-h-screen flex flex-col bg-white text-gray-900 antialiased">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 h-16 flex items-center gap-6">
@@ -84,7 +84,7 @@ export default function RootLayout({
         </header>
 
         {/* Main content */}
-        <main className="mx-auto max-w-5xl px-4 sm:px-6 py-10">{children}</main>
+        <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-10">{children}</main>
 
         {/* Footer */}
         <footer className="mt-20 border-t border-gray-100 bg-gray-50">
