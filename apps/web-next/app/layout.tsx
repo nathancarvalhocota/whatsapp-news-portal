@@ -2,12 +2,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  ),
   title: {
     default: 'WhatsApp News — Portal de Notícias',
     template: '%s | WhatsApp News',
   },
   description:
     'Portal de notícias em português sobre o ecossistema WhatsApp: atualizações oficiais, novidades beta e dicas para usuários e empresas.',
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    siteName: 'WhatsApp News',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(node node_modules/jest-cli/bin/jest.js --no-coverage)"
     ]
   }
 }

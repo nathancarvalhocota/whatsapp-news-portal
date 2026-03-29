@@ -107,12 +107,19 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ---
 
 ## Tarefa 24 — Implementar SEO técnico do front
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `apps/web-next/app/layout.tsx` — adicionado `metadataBase`, Open Graph padrão (`type: website`, `locale: pt_BR`, `siteName`), `robots: { index, follow }`
+  - `apps/web-next/app/page.tsx` — título corrigido para `{ absolute }` (evita template duplicado), `alternates.canonical: '/'`
+  - `apps/web-next/app/artigos/[slug]/page.tsx` — `generateMetadata` com canonical e OG (`type: article`, `publishedTime`); JSON-LD sempre renderizado (backend ou fallback NewsArticle)
+  - `apps/web-next/app/categorias/[categoria]/page.tsx` — `generateMetadata` com canonical e OG
+  - `apps/web-next/app/sitemap.ts` — criado; rotas estáticas + todos os artigos publicados via API (tolerante a falha)
+  - `apps/web-next/app/robots.ts` — criado; permite todos os crawlers, aponta para `/sitemap.xml`
+  - `apps/web-next/.env.example` — documentada variável `NEXT_PUBLIC_SITE_URL`
+- **Testes criados/executados:** 23 testes existentes passando (jest); TypeScript compilou sem erros (`tsc --noEmit`)
+- **Validação manual:** metadataBase resolve URLs relativas; JSON-LD sempre presente (backend ou fallback); sitemap tolerante a API offline; robots.txt gerado automaticamente
+- **Riscos/pendências:** definir `NEXT_PUBLIC_SITE_URL` no painel da Vercel antes do deploy para canonical e sitemap corretos
+- **Data de conclusão:** 2026-03-29
 
 ---
 

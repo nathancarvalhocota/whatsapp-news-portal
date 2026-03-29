@@ -3,9 +3,12 @@ import { ArticleCard } from '@/components/ArticleCard';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp News — Portal de Notícias',
+  title: { absolute: 'WhatsApp News — Portal de Notícias' },
   description:
     'Últimas notícias sobre o ecossistema WhatsApp em português: atualizações oficiais, novidades beta e muito mais.',
+  alternates: {
+    canonical: '/',
+  },
 };
 
 export default async function HomePage() {

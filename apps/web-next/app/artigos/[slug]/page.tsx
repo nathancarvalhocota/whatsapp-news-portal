@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getArticleBySlug } from '@/lib/api';
 import type { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -10,9 +12,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { slug } = await params;
     const article = await getArticleBySlug(slug);
+    const title = article.metaTitle || article.title;
     return {
-      title: article.metaTitle || article.title,
+      title,
       description: article.metaDescription,
+      alternates: {
+        canonical: `/artigos/${slug}`,
+      },
+      openGraph: {
+        type: 'article',
+        title,
+        description: article.metaDescription,
+        publishedTime: article.publishedAt,
+      },
     };
   } catch {
     return { title: 'Artigo não encontrado' };
@@ -41,13 +53,27 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <>
-      {/* JSON-LD injetado pelo back-end */}
-      {article.schemaJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: article.schemaJsonLd }}
-        />
-      )}
+      {/* JSON-LD (back-end ou fallback) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html:
+            article.schemaJsonLd ??
+            JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'NewsArticle',
+              headline: article.title,
+              description: article.metaDescription,
+              datePublished: article.publishedAt,
+              author: { '@type': 'Organization', name: 'WhatsApp News' },
+              publisher: { '@type': 'Organization', name: 'WhatsApp News' },
+              mainEntityOfPage: {
+                '@type': 'WebPage',
+                '@id': `${siteUrl}/artigos/${slug}`,
+              },
+            }),
+        }}
+      />
 
       <article>
         {/* Cabeçalho */}
