@@ -83,6 +83,20 @@ public class HtmlIngestionAdapter : IIngestionAdapter
         return DefaultConfig;
     }
 
+    /// <summary>
+    /// Returns the parser config matching the host of the given URL, or the default config.
+    /// Used by the demo pipeline to extract content from a specific URL.
+    /// </summary>
+    internal static HtmlSourceParserConfig GetParserConfigForHost(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && SourceConfigs.TryGetValue(uri.Host, out var config))
+        {
+            return config;
+        }
+        return DefaultConfig;
+    }
+
     internal List<DiscoveredItemDto> ParseListingPage(string html, Source source, HtmlSourceParserConfig config)
     {
         var parser = new HtmlParser();

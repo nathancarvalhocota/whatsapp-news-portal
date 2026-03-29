@@ -761,8 +761,8 @@ Garantir uma demonstração confiável mesmo sem posts novos durante o hackathon
 
 ### Implementar
 - endpoint/comando `RunDemoPipeline`;
-- uso de fixtures reais em `samples`;
-- o fluxo deve percorrer as mesmas etapas do pipeline real;
+- consome uma URL específica de um dos sites oficiais (eu mesmo irei incluir alguma recente, só deixe o campo pronto)
+- o fluxo deve percorrer as mesmas etapas do pipeline real, simulando que aquela é a URL de um novo post encontrado;
 - flag `isDemoItem` para rastreabilidade;
 - permitir reset ou reprocessamento previsível do cenário demo.
 

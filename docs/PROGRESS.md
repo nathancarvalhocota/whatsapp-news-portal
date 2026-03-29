@@ -490,22 +490,58 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 17 — Implementar orquestrador manual do pipeline real
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `Pipeline/Application/IPipelineOrchestrator.cs` — interface do orquestrador com método `RunAsync`
+  - `Pipeline/Application/PipelineRunResultDto.cs` — DTOs de resultado (`PipelineRunResultDto`, `PipelineItemSummary`) com contadores por etapa, lista de itens processados e erros
+  - `Pipeline/Infrastructure/PipelineOrchestrator.cs` — implementação do fluxo ponta a ponta: buscar novidades por fonte (RSS ou HTML conforme `FeedUrl`), deduplicar por URL, persistir `SourceItem`, normalizar, classificar via IA, gerar draft via IA. Logs por etapa via `IProcessingLogRepository`. Falha em um item não interrompe os demais (try/catch por item e por fonte)
+  - `Sources/Infrastructure/EfSourceRepository.cs` — implementação de `ISourceRepository` (faltava no projeto)
+  - `Program.cs` — registro DI de `ISourceRepository → EfSourceRepository` e `IPipelineOrchestrator → PipelineOrchestrator`; endpoint `POST /api/pipeline/run`
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `PipelineOrchestratorTests` — 9 testes de integração com providers mockados:
+    - `RunAsync_NoSources_ReturnsEmptyResult` — sem fontes retorna resultado vazio
+    - `RunAsync_WithItems_FullPipelineProducesDrafts` — fluxo completo gera draft com artigo persistido
+    - `RunAsync_DuplicateUrl_SkipsItem` — item com URL já existente é ignorado
+    - `RunAsync_ClassificationFailure_DoesNotStopOtherItems` — falha na classificação de um item não impede o próximo
+    - `RunAsync_MultipleItems_ProducesCorrectItemSummaries` — múltiplos itens geram summaries corretos
+    - `RunAsync_SourceWithNoFeed_UsesHtmlAdapter` — fonte sem feed usa HtmlIngestionAdapter
+    - `RunAsync_IngestionFailure_ContinuesToNextSource` — falha na ingestão de uma fonte não impede as demais
+    - `RunAsync_ProcessingLogs_AreCreated` — logs de etapa são criados (ingestion, normalization, deduplication)
+    - `RunAsync_Timestamps_AreSet` — timestamps de início/fim são preenchidos
+  - Resultado: 209/209 testes passando (9 novos + 200 pré-existentes)
+- **Validação manual:** `POST /api/pipeline/run` executa o pipeline completo e retorna JSON com contadores, lista de itens e erros. Smoke test: endpoint acessível, resposta estruturada
+- **Riscos/pendências:** deduplicação pós-normalização por canonical URL/content hash não é feita no orquestrador (apenas dedup por URL original pré-persistência) — o `IDeduplicationService` existente encontra o próprio item como "duplicado" após a normalização salvar no DB; para dedup por hash seria necessário estender a interface com parâmetro de exclusão, o que fica fora do escopo desta tarefa
+- **Data de conclusão:** 2026-03-29
 
 ---
 
 ## Tarefa 18 — Implementar modo demo RunDemoPipeline
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Application/IDemoPipelineService.cs` — interface do serviço demo (atualizada: aceita DemoPipelineRequest com URL e flag reset)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Application/DemoPipelineRequest.cs` — DTO de request com URL e flag Reset (novo)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Application/DemoPipelineResultDto.cs` — DTO de resultado com Success, URL, SourceItemId, ArticleId, Slug, Steps, etc. (atualizado)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Infrastructure/DemoPipelineService.cs` — implementação completa: fetch HTML → normalizar → classificar → gerar draft, com IsDemoItem=true, reset de dados demo, idempotência (novo)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Ingestion/Infrastructure/HtmlIngestionAdapter.cs` — adicionado método estático `GetParserConfigForHost` para reuso no demo
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — registrado IDemoPipelineService + endpoint POST /api/pipeline/run-demo
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/DemoPipelineServiceTests.cs` — 10 testes de integração (novo)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/PipelineContractTests.cs` — testes de contrato atualizados para novo DemoPipelineResultDto
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `RunDemo_WithValidUrl_ProducesDraftArticle` — fluxo completo: URL → fetch → normalize → classify → draft com IsDemoItem=true
+  - `RunDemo_EmptyUrl_ReturnsError` — validação de URL vazia
+  - `RunDemo_NullUrl_ReturnsError` — validação de URL null
+  - `RunDemo_SameUrlTwice_WithoutReset_ReturnsExistingData` — idempotência: segunda execução retorna dados existentes
+  - `RunDemo_SameUrlTwice_WithReset_ReprocessesSuccessfully` — reset: apaga dados anteriores e reprocessa
+  - `RunDemo_MatchesSourceByDomain` — matching de source por domínio da URL
+  - `RunDemo_UnknownDomain_FallsBackToFirstOfficialSource` — fallback para primeira source oficial
+  - `RunDemo_FetchFails_ReturnsError` — erro quando fetch falha
+  - `RunDemo_NoActiveSources_ReturnsError` — erro quando não há sources ativas
+  - `RunDemo_CreatesProcessingLogs` — verifica criação de logs de processamento
+  - 3 testes de contrato do DTO atualizados
+  - Resultado: 219 testes aprovados, 0 falhas
+- **Validação manual:** `dotnet build` compila sem warnings/erros; `dotnet test` passa 219/219 testes; endpoint `POST /api/pipeline/run-demo` registrado e aceita body `{ "url": "...", "reset": true/false }`; pipeline real reutilizado (mesmos steps de normalização, classificação e geração); flag `IsDemoItem=true` aplicada; reset remove dados demo anteriores (articles, source items, logs); cenário idempotente sem reset
+- **Riscos/pendências:** campo `DefaultDemoUrl` está vazio — o usuário deve preencher com uma URL real antes da demo; o endpoint depende de fontes seedadas no banco para matching por domínio
+- **Data de conclusão:** 2026-03-29
 
 ---
 

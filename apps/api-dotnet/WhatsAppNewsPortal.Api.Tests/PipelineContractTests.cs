@@ -208,25 +208,25 @@ public class PipelineContractTests
     {
         var result = new DemoPipelineResultDto();
 
-        Assert.Equal(0, result.ItemsDiscovered);
-        Assert.Equal(0, result.DraftsGenerated);
-        Assert.Empty(result.Errors);
-        Assert.False(result.HasErrors);
+        Assert.False(result.Success);
+        Assert.Equal(string.Empty, result.Url);
+        Assert.Null(result.SourceItemId);
+        Assert.Null(result.ArticleId);
+        Assert.Empty(result.Steps);
     }
 
     [Fact]
-    public void DemoPipelineResultDto_HasErrors_TrueWhenErrorsPresent()
+    public void DemoPipelineResultDto_ErrorMessage_TracksFailure()
     {
         var result = new DemoPipelineResultDto
         {
-            ItemsDiscovered = 2,
-            ItemsProcessed = 1,
-            DraftsGenerated = 1,
-            Errors = ["Feed indisponível para fonte: WhatsApp Business Blog"]
+            Success = false,
+            Url = "https://blog.whatsapp.com/demo",
+            ErrorMessage = "Failed to fetch content"
         };
 
-        Assert.True(result.HasErrors);
-        Assert.Single(result.Errors);
+        Assert.False(result.Success);
+        Assert.NotNull(result.ErrorMessage);
     }
 
     [Fact]
@@ -235,11 +235,15 @@ public class PipelineContractTests
         var executedAt = new DateTime(2026, 3, 28, 14, 0, 0, DateTimeKind.Utc);
         var original = new DemoPipelineResultDto
         {
-            ItemsDiscovered = 3,
-            ItemsProcessed = 3,
-            DraftsGenerated = 2,
-            ArticlesPublished = 2,
-            Errors = [],
+            Success = true,
+            Url = "https://blog.whatsapp.com/demo-post",
+            SourceName = "WhatsApp Blog",
+            WasReset = true,
+            SourceItemId = Guid.NewGuid(),
+            ArticleId = Guid.NewGuid(),
+            Slug = "demo-post-whatsapp",
+            Status = "draft",
+            Steps = ["Source matched", "Content fetched", "Article generated"],
             ExecutedAt = executedAt
         };
 
@@ -247,10 +251,14 @@ public class PipelineContractTests
         var restored = JsonSerializer.Deserialize<DemoPipelineResultDto>(json);
 
         Assert.NotNull(restored);
-        Assert.Equal(3, restored.ItemsDiscovered);
-        Assert.Equal(2, restored.ArticlesPublished);
-        Assert.Empty(restored.Errors);
-        Assert.False(restored.HasErrors);
+        Assert.True(restored.Success);
+        Assert.Equal("https://blog.whatsapp.com/demo-post", restored.Url);
+        Assert.Equal("WhatsApp Blog", restored.SourceName);
+        Assert.True(restored.WasReset);
+        Assert.Equal(original.SourceItemId, restored.SourceItemId);
+        Assert.Equal(original.ArticleId, restored.ArticleId);
+        Assert.Equal("demo-post-whatsapp", restored.Slug);
+        Assert.Equal(3, restored.Steps.Count);
         Assert.Equal(executedAt, restored.ExecutedAt);
     }
 }

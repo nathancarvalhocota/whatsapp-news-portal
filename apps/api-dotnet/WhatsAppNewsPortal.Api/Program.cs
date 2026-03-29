@@ -12,6 +12,10 @@ using WhatsAppNewsPortal.Api.Ingestion.Application;
 using WhatsAppNewsPortal.Api.Ingestion.Infrastructure;
 using WhatsAppNewsPortal.Api.Sources.Application;
 using WhatsAppNewsPortal.Api.Sources.Domain;
+using WhatsAppNewsPortal.Api.Pipeline.Application;
+using WhatsAppNewsPortal.Api.Pipeline.Infrastructure;
+using WhatsAppNewsPortal.Api.Demo.Application;
+using WhatsAppNewsPortal.Api.Demo.Infrastructure;
 using WhatsAppNewsPortal.Api.Sources.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +47,9 @@ builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(client =>
 });
 builder.Services.AddScoped<HtmlIngestionAdapter>();
 
+// --- Sources ---
+builder.Services.AddScoped<ISourceRepository, EfSourceRepository>();
+
 // --- ContentProcessing ---
 builder.Services.AddScoped<ISourceItemRepository, EfSourceItemRepository>();
 builder.Services.AddScoped<IContentProcessor, SourceItemNormalizer>();
@@ -72,6 +79,12 @@ builder.Services.AddHttpClient<ITextGenerationProvider, GeminiTextGenerationProv
 });
 builder.Services.AddScoped<IAiClassifier, GeminiClassifier>();
 builder.Services.AddScoped<IAiArticleGenerator, GeminiArticleGenerator>();
+
+// --- Pipeline ---
+builder.Services.AddScoped<IPipelineOrchestrator, PipelineOrchestrator>();
+
+// --- Demo ---
+builder.Services.AddScoped<IDemoPipelineService, DemoPipelineService>();
 
 // --- CORS ---
 var corsOrigin = builder.Configuration["CORS_ORIGIN"] ?? "http://localhost:3000";
@@ -117,6 +130,20 @@ app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher
     {
         return Results.BadRequest(new { error = ex.Message });
     }
+});
+
+// --- Pipeline manual trigger ---
+app.MapPost("/api/pipeline/run", async (IPipelineOrchestrator orchestrator, CancellationToken ct) =>
+{
+    var result = await orchestrator.RunAsync(ct);
+    return Results.Ok(result);
+});
+
+// --- Demo pipeline ---
+app.MapPost("/api/pipeline/run-demo", async (DemoPipelineRequest request, IDemoPipelineService demo, CancellationToken ct) =>
+{
+    var result = await demo.RunDemoAsync(request, ct);
+    return result.Success ? Results.Ok(result) : Results.UnprocessableEntity(result);
 });
 
 // --- Dev: seed a draft for manual testing (only in Development) ---

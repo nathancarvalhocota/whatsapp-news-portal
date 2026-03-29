@@ -1,20 +1,19 @@
 namespace WhatsAppNewsPortal.Api.Demo.Application;
 
 /// <summary>
-/// Summary of a demo pipeline execution.
-/// Produced by IDemoPipelineService after processing all demo fixtures.
+/// Result of a demo pipeline execution.
 /// </summary>
 public class DemoPipelineResultDto
 {
-    public int ItemsDiscovered { get; set; }
-    public int ItemsProcessed { get; set; }
-    public int DraftsGenerated { get; set; }
-    public int ArticlesPublished { get; set; }
-
-    /// <summary>Short error descriptions for any items that failed during the run.</summary>
-    public List<string> Errors { get; set; } = [];
-
+    public bool Success { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public string? SourceName { get; set; }
+    public bool WasReset { get; set; }
+    public Guid? SourceItemId { get; set; }
+    public Guid? ArticleId { get; set; }
+    public string? Slug { get; set; }
+    public string? Status { get; set; }
+    public string? ErrorMessage { get; set; }
+    public List<string> Steps { get; set; } = [];
     public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
-
-    public bool HasErrors => Errors.Count > 0;
 }
