@@ -540,18 +540,43 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
   - 3 testes de contrato do DTO atualizados
   - Resultado: 219 testes aprovados, 0 falhas
 - **Validação manual:** `dotnet build` compila sem warnings/erros; `dotnet test` passa 219/219 testes; endpoint `POST /api/pipeline/run-demo` registrado e aceita body `{ "url": "...", "reset": true/false }`; pipeline real reutilizado (mesmos steps de normalização, classificação e geração); flag `IsDemoItem=true` aplicada; reset remove dados demo anteriores (articles, source items, logs); cenário idempotente sem reset
-- **Riscos/pendências:** campo `DefaultDemoUrl` está vazio — o usuário deve preencher com uma URL real antes da demo; o endpoint depende de fontes seedadas no banco para matching por domínio
+- **Riscos/pendências:** nenhum
 - **Data de conclusão:** 2026-03-29
 
 ---
 
 ## Tarefa 19 — Expor endpoints mínimos para o front-end
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/ArticleSummaryDto.cs` — DTO de listagem (sem contentHtml/sourceItemId/status)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/ArticleDetailDto.cs` — DTO de detalhe com SourceReferences (sem sourceItemId/status)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/SourceReferenceDto.cs` — DTO de referência de origem
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Sources/Application/SourceDto.cs` — DTO de fonte (sem feedUrl interno)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/IArticleRepository.cs` — adicionados `GetPublishedAsync` e `GetByCategoryAsync` com paginação
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/EfArticleRepository.cs` — implementação dos dois novos métodos (filtro Published, order by PublishedAt desc, Skip/Take)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — 4 endpoints GET adicionados
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticleEndpointTests.cs` — 10 testes de integração (novo)
 - **Testes criados/executados:**
+  - `GetPublishedArticles_EmptyList_ReturnsEmptyArray` — lista vazia retorna array vazio
+  - `GetPublishedArticles_WithArticle_ReturnsSummaryFields` — retorna campos summary, sem contentHtml/sourceItemId/status
+  - `GetArticleBySlug_NotFound_Returns404` — slug inexistente retorna 404
+  - `GetArticleBySlug_DraftArticle_Returns404` — draft não é exposto publicamente
+  - `GetArticleBySlug_PublishedArticle_ReturnsDetailFields` — retorna contentHtml, metaTitle, sourceReferences, sem sourceItemId/status
+  - `GetPublishedArticles_RouteTakesPrecedenceOverSlug` — rota literal /published tem precedência sobre rota de slug
+  - `GetCategoryArticles_EmptyList_ReturnsEmptyArray` — categoria sem artigos retorna array vazio
+  - `GetCategoryArticles_WithArticle_ReturnsSummaryShape` — retorna artigos da categoria no shape summary
+  - `GetSources_EmptyList_ReturnsEmptyArray` — fontes vazia retorna array vazio
+  - `GetSources_WithSource_ReturnsPublicFields` — retorna campos públicos, sem feedUrl
+  - Total: 229 testes aprovados, 0 falhas (10 novos)
 - **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `dotnet build` compila sem erros nem warnings
+  - `dotnet test` — 229 testes aprovados, 0 falhas
+  - `GET /api/articles/published` — lista artigos publicados com paginação (page, pageSize), shape ArticleSummaryDto
+  - `GET /api/articles/{slug}` — detalhe do artigo publicado, 404 para draft/inexistente, shape ArticleDetailDto com SourceReferences
+  - `GET /api/categories/{category}` — lista artigos publicados por categoria, shape ArticleSummaryDto
+  - `GET /api/sources` — lista fontes ativas, shape SourceDto sem feedUrl
+- **Riscos/pendências:** nenhum
+- **Data de conclusão:** 2026-03-29
 
 ---
 

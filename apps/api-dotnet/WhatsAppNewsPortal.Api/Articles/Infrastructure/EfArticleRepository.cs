@@ -24,6 +24,7 @@ public class EfArticleRepository : IArticleRepository
     public async Task<Article?> GetBySlugAsync(string slug, CancellationToken ct = default)
     {
         return await _db.Articles
+            .Include(a => a.SourceReferences)
             .FirstOrDefaultAsync(a => a.Slug == slug, ct);
     }
 
@@ -31,6 +32,16 @@ public class EfArticleRepository : IArticleRepository
     {
         return await _db.Articles
             .Where(a => a.Status == PipelineStatus.Published)
+            .OrderByDescending(a => a.PublishedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<Article>> GetByCategoryAsync(string category, int page, int pageSize, CancellationToken ct = default)
+    {
+        return await _db.Articles
+            .Where(a => a.Status == PipelineStatus.Published && a.Category == category)
             .OrderByDescending(a => a.PublishedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

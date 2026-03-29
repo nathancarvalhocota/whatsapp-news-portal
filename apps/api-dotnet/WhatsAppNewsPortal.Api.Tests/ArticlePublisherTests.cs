@@ -233,6 +233,9 @@ public class ArticlePublisherTests
         public Task<List<Article>> GetPublishedAsync(int page, int pageSize, CancellationToken ct = default)
             => Task.FromResult(new List<Article>());
 
+        public Task<List<Article>> GetByCategoryAsync(string category, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult(new List<Article>());
+
         public Task<bool> ExistsBySourceItemIdAsync(Guid sourceItemId, CancellationToken ct = default)
             => Task.FromResult(false);
 

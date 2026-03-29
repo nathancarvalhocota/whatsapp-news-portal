@@ -118,7 +118,50 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 // --- Controller de teste ---
 app.MapGet("/api/ping", () => Results.Ok(new { message = "pong", timestamp = DateTime.UtcNow }));
 
-// --- Articles ---
+// --- Articles (public read endpoints) ---
+app.MapGet("/api/articles/published", async (
+    IArticleRepository repo,
+    int page = 1,
+    int pageSize = 20,
+    CancellationToken ct = default) =>
+{
+    if (page < 1) page = 1;
+    if (pageSize < 1 || pageSize > 100) pageSize = 20;
+    var articles = await repo.GetPublishedAsync(page, pageSize, ct);
+    return Results.Ok(articles.Select(ArticleSummaryDto.FromArticle));
+});
+
+app.MapGet("/api/articles/{slug}", async (
+    string slug,
+    IArticleRepository repo,
+    CancellationToken ct) =>
+{
+    var article = await repo.GetBySlugAsync(slug, ct);
+    if (article is null || article.Status != PipelineStatus.Published)
+        return Results.NotFound();
+    return Results.Ok(ArticleDetailDto.FromArticle(article));
+});
+
+app.MapGet("/api/categories/{category}", async (
+    string category,
+    IArticleRepository repo,
+    int page = 1,
+    int pageSize = 20,
+    CancellationToken ct = default) =>
+{
+    if (page < 1) page = 1;
+    if (pageSize < 1 || pageSize > 100) pageSize = 20;
+    var articles = await repo.GetByCategoryAsync(category, page, pageSize, ct);
+    return Results.Ok(articles.Select(ArticleSummaryDto.FromArticle));
+});
+
+app.MapGet("/api/sources", async (ISourceRepository repo, CancellationToken ct) =>
+{
+    var sources = await repo.GetActiveSourcesAsync(ct);
+    return Results.Ok(sources.Select(SourceDto.FromSource));
+});
+
+// --- Articles (admin actions) ---
 app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher publisher, CancellationToken ct) =>
 {
     try
