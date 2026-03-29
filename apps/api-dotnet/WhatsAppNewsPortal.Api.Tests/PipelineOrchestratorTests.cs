@@ -324,6 +324,130 @@ public class PipelineOrchestratorTests : IDisposable
         Assert.True(result.FinishedAt <= DateTime.UtcNow);
     }
 
+    [Fact]
+    public async Task RunAsync_ArticleGenerationFailure_DoesNotStopOtherItems()
+    {
+        // A falha na geração de artigo de um item não deve impedir o processamento dos demais.
+        var source = CreateSource();
+        var items = new List<DiscoveredItemDto>
+        {
+            new()
+            {
+                SourceId = source.Id,
+                OriginalUrl = "https://blog.whatsapp.com/gen-fail-item",
+                Title = "Will Fail Generation",
+                RawContent = "<p>WhatsApp is launching a new feature for screen sharing in video calls. This allows users to share their screens during group video calls with up to 32 people.</p>"
+            },
+            new()
+            {
+                SourceId = source.Id,
+                OriginalUrl = "https://blog.whatsapp.com/gen-success-item",
+                Title = "Will Succeed Generation",
+                RawContent = "<p>WhatsApp is launching a new feature for message reactions. Users can now react to any message with any emoji in groups and chats everywhere.</p>"
+            }
+        };
+
+        var failingGenerator = new FailOnFirstGenerator();
+        var orchestrator = BuildOrchestrator(
+            rssAdapter: new FakeIngestionAdapter(items),
+            articleGenerator: failingGenerator);
+
+        var result = await orchestrator.RunAsync();
+
+        Assert.Equal(2, result.ItemsDiscovered);
+        Assert.True(result.HasErrors);
+        Assert.True(result.DraftsGenerated >= 1);
+    }
+
+    [Fact]
+    public async Task RunAsync_ClassificationError_SourceItemStatusIsPersistedAsFailed()
+    {
+        // Quando a classificação falha, o SourceItem deve ter status Failed no banco.
+        var source = CreateSource();
+        var url = "https://blog.whatsapp.com/classify-fail-item";
+        var items = new List<DiscoveredItemDto>
+        {
+            new()
+            {
+                SourceId = source.Id,
+                OriginalUrl = url,
+                Title = "Item That Fails Classification",
+                RawContent = "<p>WhatsApp is launching a new feature for screen sharing in video calls. This allows users to share their screens during group video calls with up to 32 people.</p>"
+            }
+        };
+
+        var orchestrator = BuildOrchestrator(
+            rssAdapter: new FakeIngestionAdapter(items),
+            classifier: new AlwaysFailingClassifier());
+
+        var result = await orchestrator.RunAsync();
+
+        Assert.True(result.HasErrors);
+        var sourceItem = await _db.SourceItems.FirstOrDefaultAsync(si => si.OriginalUrl == url);
+        Assert.NotNull(sourceItem);
+        Assert.Equal(PipelineStatus.Failed, sourceItem.Status);
+        Assert.NotNull(sourceItem.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task RunAsync_ArticleGenerationError_SourceItemStatusIsPersistedAsFailed()
+    {
+        // Quando a geração falha, o SourceItem deve ter status Failed no banco.
+        var source = CreateSource();
+        var url = "https://blog.whatsapp.com/gen-fail-persist";
+        var items = new List<DiscoveredItemDto>
+        {
+            new()
+            {
+                SourceId = source.Id,
+                OriginalUrl = url,
+                Title = "Item That Fails Generation",
+                RawContent = "<p>WhatsApp is launching a new feature for screen sharing in video calls. This allows users to share their screens during group video calls with up to 32 people.</p>"
+            }
+        };
+
+        var orchestrator = BuildOrchestrator(
+            rssAdapter: new FakeIngestionAdapter(items),
+            articleGenerator: new AlwaysFailingGenerator());
+
+        var result = await orchestrator.RunAsync();
+
+        Assert.True(result.HasErrors);
+        var sourceItem = await _db.SourceItems.FirstOrDefaultAsync(si => si.OriginalUrl == url);
+        Assert.NotNull(sourceItem);
+        Assert.Equal(PipelineStatus.Failed, sourceItem.Status);
+        Assert.NotNull(sourceItem.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task RunAsync_MultipleSourcesOneFailsIngestion_OtherSourceStillProcessed()
+    {
+        // Falha de ingestão em uma fonte HTTP não deve impedir outras fontes.
+        var failSource = CreateSource(name: "Feed Indisponível");
+        var goodSource = CreateSource(name: "Feed OK");
+        var items = new List<DiscoveredItemDto>
+        {
+            new()
+            {
+                SourceId = goodSource.Id,
+                OriginalUrl = "https://feed-ok.com/post-1",
+                Title = "Post from working source",
+                RawContent = "<p>WhatsApp is launching a new feature for screen sharing. Users can share their screens during group video calls with up to 32 people.</p>"
+            }
+        };
+
+        var adapter = new SelectiveIngestionAdapter(
+            new Dictionary<Guid, List<DiscoveredItemDto>> { [goodSource.Id] = items },
+            failSourceIds: [failSource.Id]);
+
+        var orchestrator = BuildOrchestrator(rssAdapter: adapter);
+        var result = await orchestrator.RunAsync();
+
+        Assert.Equal(2, result.SourcesProcessed);
+        Assert.True(result.HasErrors);
+        Assert.Equal(1, result.DraftsGenerated);
+    }
+
     // --- Fakes ---
 
     private class FakeIngestionAdapter(List<DiscoveredItemDto> items) : IIngestionAdapter
@@ -423,5 +547,40 @@ public class PipelineOrchestratorTests : IDisposable
                 Content = new StringContent("<html><body></body></html>")
             });
         }
+    }
+
+    private class FailOnFirstGenerator : IAiArticleGenerator
+    {
+        private int _callCount;
+
+        public Task<GeneratedArticleDto> GenerateArticleAsync(
+            NormalizedItemDto item, ClassificationResultDto classification, CancellationToken ct = default)
+        {
+            _callCount++;
+            if (_callCount == 1)
+                throw new Exception("AI article generation failed");
+
+            return Task.FromResult(new GeneratedArticleDto
+            {
+                Title = classification.SuggestedTitle,
+                Excerpt = classification.Excerpt,
+                ContentHtml = "<h2>Detalhes</h2><p>O WhatsApp anunciou um novo recurso para seus usuários. A novidade já está disponível.</p>",
+                BetaDisclaimer = null
+            });
+        }
+    }
+
+    private class AlwaysFailingClassifier : IAiClassifier
+    {
+        public Task<ClassificationResultDto> ClassifyAsync(
+            NormalizedItemDto item, CancellationToken ct = default)
+            => throw new Exception("AI classification service unavailable");
+    }
+
+    private class AlwaysFailingGenerator : IAiArticleGenerator
+    {
+        public Task<GeneratedArticleDto> GenerateArticleAsync(
+            NormalizedItemDto item, ClassificationResultDto classification, CancellationToken ct = default)
+            => throw new Exception("AI generation service unavailable");
     }
 }

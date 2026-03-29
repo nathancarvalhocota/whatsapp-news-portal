@@ -167,12 +167,28 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ---
 
 ## Tarefa 27 — Implementar tratamento robusto de falhas do pipeline
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/GeminiTextGenerationProviderTests.cs` — criado; 13 testes cobrindo erros HTTP (500, 401, 429, 503), HttpRequestException, timeout (TaskCanceledException), API key ausente, resposta vazia e sem candidatos
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/PipelineOrchestratorTests.cs` — adicionados 4 testes: falha de geração não interrompe outros itens, status `Failed` persistido no banco após erro de classificação, status `Failed` persistido após erro de geração, falha de ingestão em fonte não impede outras
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticlePublisherTests.cs` — corrigido erro pré-existente: `ArticlePublisher` passou a exigir `ILogger` na Tarefa 26, mas os testes não foram atualizados; agora passam `NullLogger`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — adicionados: `GET /api/source-items/failed` (lista itens com status Failed para o admin), `POST /api/source-items/{id}/reprocess` (reprocessa manualmente um item Failed: normalização → classificação → geração), `POST /api/pipeline/run` (endpoint que faltava para disparo do pipeline real pelo admin)
 - **Testes criados/executados:**
+  - 246 testes passando (era ~229 antes); 17 testes novos adicionados
+  - `GeminiTextGenerationProviderTests` — 13 testes: HTTP errors, timeout, API key inválida, resposta vazia
+  - `PipelineOrchestratorTests` — 4 testes novos de isolamento de falha e persistência de status
 - **Validação manual:**
+  - `dotnet build` — 0 erros, 0 avisos
+  - `dotnet test` — 246/246 aprovados
+  - Falha de classificação → `SourceItem.Status = Failed`, `ErrorMessage` preenchido, `ProcessingLog` criado
+  - Falha de geração → mesma persistência, item seguinte continua processando
+  - Falha de ingestão HTTP em uma fonte → outras fontes continuam
+  - `POST /api/source-items/{id}/reprocess` → reinicia pipeline para item com status Failed
+  - `GET /api/source-items/failed` → lista até 50 itens falhos para o admin
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - Reprocessamento não verifica se artigo já existe para o item (o `ArticleGenerationStep` já faz essa checagem internamente — retorna `Failed` com mensagem "already exists")
+  - Timeout da IA é configurável via `GEMINI_TIMEOUT_SECONDS` (padrão 60s); sem circuit breaker (fora do escopo)
+- **Data de conclusão:** 2026-03-29
 
 ---
 

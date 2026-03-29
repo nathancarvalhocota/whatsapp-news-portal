@@ -205,6 +205,82 @@ app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher
     }
 });
 
+// --- Source items: list failed (admin) ---
+app.MapGet("/api/source-items/failed", async (AppDbContext db, CancellationToken ct) =>
+{
+    var failed = await db.SourceItems
+        .Where(si => si.Status == PipelineStatus.Failed)
+        .OrderByDescending(si => si.UpdatedAt)
+        .Take(50)
+        .Select(si => new { si.Id, si.Title, si.OriginalUrl, si.ErrorMessage, si.UpdatedAt, si.SourceId })
+        .ToListAsync(ct);
+    return Results.Ok(failed);
+});
+
+// --- Source items: reprocess failed item (admin) ---
+app.MapPost("/api/source-items/{id:guid}/reprocess", async (
+    Guid id,
+    ISourceItemRepository sourceItemRepo,
+    IContentProcessor contentProcessor,
+    IClassificationStep classificationStep,
+    IArticleGenerationStep articleGenerationStep,
+    CancellationToken ct) =>
+{
+    var sourceItem = await sourceItemRepo.GetByIdAsync(id, ct);
+    if (sourceItem is null)
+        return Results.NotFound(new { error = "Item não encontrado." });
+
+    if (sourceItem.Status != PipelineStatus.Failed)
+        return Results.BadRequest(new { error = "Apenas itens com status 'Failed' podem ser reprocessados." });
+
+    // Reseta para reprocessamento
+    sourceItem.Status = PipelineStatus.Discovered;
+    sourceItem.ErrorMessage = null;
+    sourceItem.UpdatedAt = DateTime.UtcNow;
+    await sourceItemRepo.UpdateAsync(sourceItem, ct);
+
+    // Normalização
+    NormalizedItemDto normalized;
+    try
+    {
+        normalized = await contentProcessor.NormalizeAsync(sourceItem, ct);
+    }
+    catch (Exception ex)
+    {
+        return Results.UnprocessableEntity(new { error = $"Falha na normalização: {ex.Message}" });
+    }
+
+    if (string.IsNullOrEmpty(normalized.NormalizedContent))
+        return Results.UnprocessableEntity(new { error = "Falha na normalização: conteúdo vazio após limpeza." });
+
+    // Classificação
+    var classResult = await classificationStep.ExecuteAsync(normalized, ct);
+    if (!classResult.Success)
+        return Results.UnprocessableEntity(new { error = $"Falha na classificação: {classResult.ErrorMessage}" });
+
+    if (!classResult.IsRelevant)
+        return Results.Ok(new { status = "discarded", reason = classResult.DiscardReason });
+
+    // Geração de artigo
+    var genResult = await articleGenerationStep.ExecuteAsync(normalized, classResult.Classification!, ct);
+    if (!genResult.Success)
+        return Results.UnprocessableEntity(new { error = $"Falha na geração: {genResult.ErrorMessage}" });
+
+    return Results.Ok(new
+    {
+        status = "draft",
+        articleId = genResult.ArticleId,
+        slug = genResult.Slug
+    });
+});
+
+// --- Pipeline: run full pipeline ---
+app.MapPost("/api/pipeline/run", async (IPipelineOrchestrator orchestrator, CancellationToken ct) =>
+{
+    var result = await orchestrator.RunAsync(ct);
+    return Results.Ok(result);
+});
+
 // --- Demo pipeline ---
 app.MapPost("/api/pipeline/run-demo", async (DemoPipelineRequest request, IDemoPipelineService demo, CancellationToken ct) =>
 {

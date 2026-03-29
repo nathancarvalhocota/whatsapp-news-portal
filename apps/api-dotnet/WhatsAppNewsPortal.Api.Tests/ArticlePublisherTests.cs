@@ -16,7 +16,7 @@ public class ArticlePublisherTests
     {
         var article = ValidDraftArticle();
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var result = await publisher.PublishAsync(article.Id);
 
@@ -40,7 +40,7 @@ public class ArticlePublisherTests
         article.PublishedAt = publishedAt;
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var result = await publisher.PublishAsync(article.Id);
 
@@ -56,7 +56,7 @@ public class ArticlePublisherTests
     {
         var article = ValidDraftArticle();
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var first = await publisher.PublishAsync(article.Id);
         var second = await publisher.PublishAsync(article.Id);
@@ -74,7 +74,7 @@ public class ArticlePublisherTests
     public async Task Publish_ArticleNotFound_Throws()
     {
         var repo = new InMemoryArticleRepo(null);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(Guid.NewGuid()));
@@ -89,7 +89,7 @@ public class ArticlePublisherTests
         article.Status = PipelineStatus.Failed;
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -104,7 +104,7 @@ public class ArticlePublisherTests
         article.Status = PipelineStatus.Processing;
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -119,7 +119,7 @@ public class ArticlePublisherTests
         article.Title = "";
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -134,7 +134,7 @@ public class ArticlePublisherTests
         article.ContentHtml = "";
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -149,7 +149,7 @@ public class ArticlePublisherTests
         article.ContentHtml = "Texto sem tags HTML";
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -164,7 +164,7 @@ public class ArticlePublisherTests
         article.Slug = "";
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
@@ -181,7 +181,7 @@ public class ArticlePublisherTests
         article.Slug = "";
 
         var repo = new InMemoryArticleRepo(article);
-        var publisher = new ArticlePublisher(repo);
+        var publisher = new ArticlePublisher(repo, Microsoft.Extensions.Logging.Abstractions.NullLogger<ArticlePublisher>.Instance);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => publisher.PublishAsync(article.Id));
