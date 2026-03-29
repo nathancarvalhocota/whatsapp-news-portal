@@ -47,18 +47,29 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // --- HTTP Clients ---
-builder.Services.AddHttpClient<RssIngestionAdapter>(client =>
+// Headers completos de navegador para evitar bloqueios 400/403 em sites com proteção anti-bot
+const string BrowserUserAgent =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+void ConfigureBrowserHeaders(HttpClient client)
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
-});
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Connection", "keep-alive");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Dest", "document");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-Site", "none");
+    client.DefaultRequestHeaders.TryAddWithoutValidation("Sec-Fetch-User", "?1");
+}
+
+builder.Services.AddHttpClient<RssIngestionAdapter>(ConfigureBrowserHeaders);
 builder.Services.AddScoped<IIngestionAdapter, RssIngestionAdapter>();
 
-builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("WhatsAppNewsPortal/1.0");
-});
+builder.Services.AddHttpClient<IHtmlFetcher, HtmlFetcher>(ConfigureBrowserHeaders);
 builder.Services.AddScoped<HtmlIngestionAdapter>();
 
 // --- Sources ---

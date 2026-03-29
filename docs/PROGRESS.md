@@ -228,7 +228,7 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 
 ---
 
-## Tarefa 28 — Popular o sistema com artigos reais
+## Tarefa 28 — Popular o sistema com artigos reais (+ correções de ingestão)
 - **Status:** concluída
 - **Arquivos criados/alterados:**
   - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Application/PipelineJobSettings.cs` — criado; classe de configuração com variáveis facilmente modificáveis: `IntervalMinutes` (dev: 5min, prod: 720min/12h), `RunOnStartup` (default: true), `MinPublishedDate` (default: 2026-03-28), `AutoPublishDrafts` (default: true)
@@ -256,6 +256,11 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
   - Em produção: executa 1x no startup e depois a cada 12 horas
   - Se `PIPELINE_MIN_DATE` for alterado para `2026-03-01`, buscará posts a partir dessa data (ignorando os já existentes via dedup por URL)
   - Distinção oficial/beta mantida: fontes `Official` geram `OfficialNews`, fontes `BetaSpecialized` geram `BetaNews`
+- **Correções pós-execução real (ingestão):**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — User-Agent alterado de `WhatsAppNewsPortal/1.0` para User-Agent real de Chrome 124; resolve 403 no WABetaInfo e outros sites com proteção anti-bot
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Ingestion/Infrastructure/RssIngestionAdapter.cs` — adicionado `SanitizeXml()`: escapa `&` soltos (não seguidos de entidade XML válida) antes do parse; resolve `XmlException` no feed RSS do WhatsApp Blog
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/RssIngestionAdapterTests.cs` — 3 testes novos: `SanitizeXml_EscapesUnescapedAmpersands`, `SanitizeXml_PreservesValidEntities`, `ParseFeed_WithUnescapedAmpersand_ParsesSuccessfully`
+- **Testes totais após correções:** 249 (era 246)
 - **Riscos/pendências:**
   - HTML adapter (business.whatsapp.com, developers.facebook.com) não retorna `PublishedAt`, então esses itens não são filtrados por data (processados normalmente)
   - Volume controlado pelo filtro de data e pela frequência do job

@@ -24,7 +24,7 @@ public static class SourceSeeder
             Name = "WhatsApp Business Blog",
             Type = SourceType.Official,
             BaseUrl = "https://business.whatsapp.com/blog",
-            FeedUrl = null,
+            FeedUrl = "https://business.whatsapp.com/blog/rss/",
             IsActive = true
         },
         new Source
@@ -33,7 +33,7 @@ public static class SourceSeeder
             Name = "WhatsApp API Documentation",
             Type = SourceType.Official,
             BaseUrl = "https://developers.facebook.com/blog",
-            FeedUrl = null,
+            FeedUrl = "https://developers.facebook.com/blog/rss/",
             IsActive = true
         },
         new Source

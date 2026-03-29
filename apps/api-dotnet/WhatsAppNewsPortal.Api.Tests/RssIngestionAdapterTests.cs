@@ -277,6 +277,59 @@ public class RssIngestionAdapterTests
     }
 
     // -----------------------------------------------------------------------
+    // XML sanitization: feeds com & não escapado
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void SanitizeXml_EscapesUnescapedAmpersands()
+    {
+        var input = "<item><title>A &amp; B</title><link>https://x.com?a=1&b=2</link></item>";
+        var result = RssIngestionAdapter.SanitizeXml(input);
+
+        // &amp; já escapado deve permanecer; & solto na URL deve virar &amp;
+        Assert.Contains("A &amp; B", result);
+        Assert.Contains("a=1&amp;b=2", result);
+    }
+
+    [Fact]
+    public void SanitizeXml_PreservesValidEntities()
+    {
+        var input = "<title>A &amp; B &lt;test&gt; &#169; &#x00A9;</title>";
+        var result = RssIngestionAdapter.SanitizeXml(input);
+
+        // Nenhuma entidade válida deve ser alterada
+        Assert.Equal(input, result);
+    }
+
+    [Fact]
+    public void ParseFeed_WithUnescapedAmpersand_ParsesSuccessfully()
+    {
+        // Simula o problema real do WhatsApp Blog: & solto no conteúdo
+        var xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+              <channel>
+                <title>WhatsApp Blog</title>
+                <item>
+                  <title>Privacy &amp; Security Update</title>
+                  <link>https://blog.whatsapp.com/post?a=1&b=2</link>
+                  <description>New privacy &amp; security features.</description>
+                  <pubDate>Mon, 28 Mar 2026 12:00:00 +0000</pubDate>
+                </item>
+              </channel>
+            </rss>
+            """;
+
+        var adapter = MakeAdapter(xml);
+        var source = MakeSource();
+
+        var items = adapter.ParseFeed(xml, source);
+
+        Assert.Single(items);
+        Assert.Contains("blog.whatsapp.com/post", items[0].OriginalUrl);
+    }
+
+    // -----------------------------------------------------------------------
     // Source without FeedUrl
     // -----------------------------------------------------------------------
 

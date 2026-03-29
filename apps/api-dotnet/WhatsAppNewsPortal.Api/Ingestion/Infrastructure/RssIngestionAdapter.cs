@@ -57,7 +57,10 @@ public class RssIngestionAdapter : IIngestionAdapter
 
     internal List<DiscoveredItemDto> ParseFeed(string xml, Source source)
     {
-        var doc = XDocument.Parse(xml);
+        // Alguns feeds RSS retornam '&' não escapado no conteúdo (ex: WhatsApp Blog).
+        // XDocument.Parse é strict; substituímos '&' soltos por '&amp;' antes de parsear.
+        var sanitized = SanitizeXml(xml);
+        var doc = XDocument.Parse(sanitized);
         var root = doc.Root;
         if (root is null) return [];
 
@@ -136,6 +139,16 @@ public class RssIngestionAdapter : IIngestionAdapter
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Escapa '&amp;' soltos (não seguidos por entidade XML válida) para tornar o XML parseável.
+    /// Cobre o caso comum de feeds com '&amp;' literal no conteúdo/URLs.
+    /// </summary>
+    internal static string SanitizeXml(string xml)
+    {
+        // Substitui & não seguido de identificador válido de entidade XML (word chars + ;)
+        return System.Text.RegularExpressions.Regex.Replace(xml, @"&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)", "&amp;");
     }
 
     internal static string NormalizeUrl(string url)
