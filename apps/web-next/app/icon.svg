@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#22c55e"/>
+  <!-- Chat bubble -->
+  <path d="M6 8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H13l-5 3v-3H8a2 2 0 0 1-2-2V8z" fill="white"/>
+  <!-- News lines inside bubble -->
+  <rect x="10" y="11" width="12" height="1.8" rx="0.9" fill="#22c55e"/>
+  <rect x="10" y="14.5" width="9" height="1.8" rx="0.9" fill="#22c55e"/>
+</svg>
