@@ -44,9 +44,12 @@ builder.Services.AddScoped<HtmlIngestionAdapter>();
 builder.Services.AddScoped<ISourceItemRepository, EfSourceItemRepository>();
 builder.Services.AddScoped<IContentProcessor, SourceItemNormalizer>();
 builder.Services.AddScoped<IDeduplicationService, DeduplicationService>();
+builder.Services.AddScoped<IProcessingLogRepository, EfProcessingLogRepository>();
+builder.Services.AddScoped<IClassificationStep, ClassificationStep>();
 
 // --- Articles ---
 builder.Services.AddScoped<IArticleRepository, EfArticleRepository>();
+builder.Services.AddScoped<IArticleGenerationStep, ArticleGenerationStep>();
 
 // --- AI Generation (Gemini) ---
 builder.Services.Configure<GeminiSettings>(settings =>

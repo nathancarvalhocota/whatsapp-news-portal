@@ -386,22 +386,62 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 13 — Implementar etapa de classificação e metadata com Gemini Flash-Lite
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Application/IClassificationStep.cs` — interface do pipeline step
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Application/ClassificationStepResult.cs` — DTO de resultado (Classified, Discarded, Failed)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Application/IProcessingLogRepository.cs` — interface para persistência de ProcessingLog
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Infrastructure/ClassificationStep.cs` — orquestrador: chama IAiClassifier → sanitiza → valida → persiste SourceClassification + ProcessingLog
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Infrastructure/ClassificationValidator.cs` — validação e sanitização da saída estruturada (slug, title, meta, tags, editorial note)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/ContentProcessing/Infrastructure/EfProcessingLogRepository.cs` — implementação EF Core de IProcessingLogRepository
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — DI: IProcessingLogRepository, IClassificationStep
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ClassificationStepTests.cs` — 25 testes
+- **Testes criados/executados:** 25 novos testes (166 total, todos passando)
+  - Golden tests com fixtures realistas: WhatsApp Blog oficial → official_news; WABetaInfo → beta_news com editorial note; conteúdo irrelevante → discarded com log
+  - Validação: slug vazio, título vazio, tags vazias, metaDescription vazia, excerpt vazio, múltiplos erros reportados
+  - Regras beta: beta_specialized → beta_news obrigatório; EditorialNote obrigatória para BetaNews; official → official_news
+  - Error handling: falha do classificador → Failed com log; SourceItem não encontrado → step completa mesmo assim
+  - Sanitização: slug com espaços → hífens; tags deduplicadas e lowercase; whitespace trimado
+  - Validator direto: item relevante válido, irrelevante válido, todos campos faltando, beta sem nota, irrelevante sem razão, slug com hífens consecutivos
 - **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `dotnet build` compila sem erros nem warnings
+  - `dotnet test` — 166 testes aprovados, 0 falhas
+  - Saída parseável e validada (ClassificationValidator.Validate + Sanitize)
+  - Conteúdo irrelevante descartado com registro (ProcessingLog status=discarded)
+  - WABetaInfo sempre rotulado como beta_news (enforcement no GeminiClassifier + validação no ClassificationValidator)
+  - SourceItem.SourceClassification persistido ("official_news", "beta_news" ou "discarded")
+  - ProcessingLog criado para todos os cenários (success, discarded, failure)
+- **Riscos/pendências:** nenhum
+- **Data de conclusão:** 2026-03-28
 
 ---
 
 ## Tarefa 14 — Implementar etapa de geração de artigo final com Gemini Flash
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/IArticleGenerationStep.cs` — interface do pipeline step (recebe NormalizedItemDto + ClassificationResultDto)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/ArticleGenerationStepResult.cs` — DTO de resultado (Created, Failed)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticleGenerationStep.cs` — orquestrador: chama IAiArticleGenerator → sanitiza → valida → cria Article draft → atualiza SourceItem
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticleValidator.cs` — validação (title, excerpt, contentHtml com HTML, betaDisclaimer) e sanitização (trim, null disclaimer)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — DI: IArticleGenerationStep → ArticleGenerationStep
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticleGenerationStepTests.cs` — 19 testes
+- **Testes criados/executados:** 19 novos testes (185 total, todos passando)
+  - Golden tests: artigo oficial cria draft com todos metadados; artigo beta inclui disclaimer no HTML; artigo oficial sem disclaimer
+  - Validação: título vazio, excerpt vazio, contentHtml vazio, conteúdo sem tags HTML, beta sem disclaimer, múltiplos erros, falha seta SourceItem como Failed
+  - Provider mockado: generator lança exceção → step retorna Failed; artigo duplicado → não chama generator
+  - Slug dedup: conflito de slug → sufixo -2; múltiplos conflitos → sufixo -3
+  - Validator direto: artigo oficial válido, beta válido, texto sem HTML, sanitizer trim/null
 - **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `dotnet build` compila sem erros nem warnings
+  - `dotnet test` — 185 testes aprovados, 0 falhas
+  - Draft criado com todos metadados (Slug, Title, Excerpt, ContentHtml, MetaTitle, MetaDescription, Tags, ArticleType, Category, Status=Draft)
+  - Beta disclaimer embutido no HTML como `<aside class="beta-disclaimer">` no início do conteúdo
+  - Slug deduplicado automaticamente (sufixo -2, -3...) via IArticleRepository.GetBySlugAsync
+  - SourceItem.Status atualizado para Draft no sucesso, Failed no erro
+  - ProcessingLog criado para success e failure (StepName="ArticleGeneration")
+  - Verificação de artigo duplicado (ExistsBySourceItemIdAsync) antes de chamar IA
+- **Riscos/pendências:** nenhum
+- **Data de conclusão:** 2026-03-28
 
 ---
 
