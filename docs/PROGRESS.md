@@ -192,6 +192,42 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 
 ---
 
+## Tarefa Bônus — Melhorias visuais (home e artigo)
+- **Status:** concluída
+- **Arquivos criados/alterados:**
+  - `apps/web-next/tailwind.config.ts` — adicionado `@tailwindcss/typography` plugin; extensão de cores com CSS variables (border, ring, card, muted, etc.) para compatibilidade Tailwind v3 + shadcn
+  - `apps/web-next/app/globals.css` — removidos imports incompatíveis com Tailwind v3 (`@import "shadcn/tailwind.css"`, `@apply border-border`); CSS variables em `@layer base` com valores oklch
+  - `apps/web-next/app/layout.tsx` — header sticky com logo WhatsApp + fonte Geist + nav com indicadores de cor; footer com branding Umbler, links de categoria e Separator shadcn
+  - `apps/web-next/app/page.tsx` — hero renovado com eyebrow label, título maior, botões de categoria com ícones coloridos; grid 3 colunas (lg); seções separadas Oficial / Beta com contadores
+  - `apps/web-next/app/artigos/[slug]/page.tsx` — max-w-3xl mx-auto; breadcrumb; Badge shadcn com cores green/amber; excerpt com borda lateral; conteúdo com `prose prose-lg prose-gray`; ícones SVG inline nos links de fonte; Separator shadcn
+  - `apps/web-next/components/ArticleCard.tsx` — refatorado para usar shadcn Card (CardHeader + CardContent) e Badge com className override verde/âmbar; hover com sombra e translate
+  - `apps/web-next/components.json` — gerado pelo `npx shadcn@latest init` (style: base-nova, Tailwind v3, RSC)
+  - `apps/web-next/components/ui/card.tsx` — gerado pelo shadcn
+  - `apps/web-next/components/ui/badge.tsx` — gerado pelo shadcn
+  - `apps/web-next/components/ui/separator.tsx` — gerado pelo shadcn
+  - `apps/web-next/components/ui/button.tsx` — gerado pelo shadcn
+  - `apps/web-next/lib/utils.ts` — gerado pelo shadcn (cn helper com tailwind-merge + clsx)
+- **Dependências instaladas:**
+  - `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`, `tailwind-merge`, `tw-animate-css` (via shadcn init)
+  - `@tailwindcss/typography@0.5.19` (para prose)
+- **Testes criados/executados:**
+  - 23 testes existentes (4 suites) — todos passando após refatoração
+  - `npm run build` — compilado sem erros; 9 rotas geradas
+- **Validação manual:**
+  - Header sticky com logo WhatsApp em verde, nav com indicadores de cor
+  - Home: hero com eyebrow, título grande (text-4xl/5xl), botões de categoria com dot colorido
+  - Grid 3 colunas em lg, card featured ocupa 2 colunas
+  - Badge verde "Oficial" e âmbar "Beta" em cards e página de artigo
+  - Artigo: max-w-3xl, breadcrumb, título text-3xl/4xl, prose prose-lg (typography plugin)
+  - Footer Umbler com Separator shadcn
+  - Sem libs adicionais além das explicitamente pedidas na tarefa
+- **Decisões técnicas:**
+  - shadcn gerou estilo "base-nova" (v4-style CSS); corrigido para Tailwind v3 removendo `@import "shadcn/tailwind.css"` e `@apply border-border` do globals.css
+  - Cores badge usam className override via tailwind-merge (não dependem de CSS variables)
+- **Data de conclusão:** 2026-03-29
+
+---
+
 ## Tarefa 28 — Popular o sistema com artigos reais
 - **Status:** pendente
 - **Arquivos criados/alterados:**

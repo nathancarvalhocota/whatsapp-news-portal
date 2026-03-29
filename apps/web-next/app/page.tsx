@@ -1,5 +1,6 @@
 import { getPublishedArticles, type ArticleSummary } from '@/lib/api';
 import { ArticleCard } from '@/components/ArticleCard';
+import { Separator } from '@/components/ui/separator';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -21,23 +22,49 @@ export default async function HomePage() {
     error = 'Não foi possível carregar os artigos. Tente novamente em breve.';
   }
 
+  const oficial = articles.filter((a) => a.articleType !== 'BetaNews');
+  const beta = articles.filter((a) => a.articleType === 'BetaNews');
+
   return (
-    <div>
+    <div className="space-y-12">
       {/* Hero */}
-      <section className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
-          Últimas notícias sobre WhatsApp
-        </h1>
-        <p className="mt-3 text-gray-500 text-base sm:text-lg max-w-xl">
-          Atualizações oficiais, recursos em beta e novidades do ecossistema WhatsApp — em português.
+      <section className="pt-4 pb-2">
+        <p className="text-xs font-semibold tracking-widest text-green-600 uppercase mb-3">
+          Portal de Notícias
         </p>
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight max-w-2xl">
+          Tudo sobre o ecossistema WhatsApp
+        </h1>
+        <p className="mt-4 text-gray-500 text-lg max-w-xl leading-relaxed">
+          Atualizações oficiais, recursos em beta e novidades — em português,
+          direto da fonte.
+        </p>
+
+        <div className="flex flex-wrap gap-3 mt-6 text-sm">
+          <a
+            href="/categorias/oficial"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors border border-green-200"
+          >
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            Notícias Oficiais
+          </a>
+          <a
+            href="/categorias/beta"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 text-amber-800 font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+            Recursos Beta
+          </a>
+        </div>
       </section>
+
+      <Separator />
 
       {/* Error state */}
       {error && (
         <div
           role="alert"
-          className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 mb-8"
+          className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-4"
         >
           {error}
         </div>
@@ -45,22 +72,87 @@ export default async function HomePage() {
 
       {/* Empty state */}
       {!error && articles.length === 0 && (
-        <p className="text-gray-500 py-16 text-center">
-          Nenhum artigo publicado ainda.
-        </p>
+        <div className="text-center py-20">
+          <p className="text-gray-400 text-lg">Nenhum artigo publicado ainda.</p>
+          <p className="text-gray-400 text-sm mt-2">
+            Os artigos aparecerão aqui assim que forem publicados.
+          </p>
+        </div>
       )}
 
-      {/* Article grid */}
+      {/* Todos os artigos — grid principal */}
       {articles.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {articles.map((article, index) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              featured={index === 0}
-            />
-          ))}
-        </div>
+        <section>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.map((article, index) => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                featured={index === 0}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Seção Oficial */}
+      {oficial.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+            <h2 className="text-2xl font-bold text-gray-900">
+              Anúncios Oficiais
+            </h2>
+            <span className="ml-auto text-sm text-gray-400">
+              {oficial.length} artigo{oficial.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {oficial.slice(0, 6).map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+          {oficial.length > 6 && (
+            <div className="mt-6 text-center">
+              <a
+                href="/categorias/oficial"
+                className="text-sm text-green-700 hover:text-green-900 font-medium hover:underline"
+              >
+                Ver todos os {oficial.length} artigos oficiais →
+              </a>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Seção Beta */}
+      {beta.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <span className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
+            <h2 className="text-2xl font-bold text-gray-900">
+              Recursos em Beta
+            </h2>
+            <span className="ml-auto text-sm text-gray-400">
+              {beta.length} artigo{beta.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {beta.slice(0, 6).map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+          {beta.length > 6 && (
+            <div className="mt-6 text-center">
+              <a
+                href="/categorias/beta"
+                className="text-sm text-amber-700 hover:text-amber-900 font-medium hover:underline"
+              >
+                Ver todos os {beta.length} artigos beta →
+              </a>
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
