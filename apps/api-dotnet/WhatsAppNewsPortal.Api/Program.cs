@@ -45,6 +45,16 @@ if (string.IsNullOrEmpty(connectionString))
 if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Connection string not configured. Set ConnectionStrings__DefaultConnection or DATABASE_URL.");
 
+// Render injects DATABASE_URL as a postgres:// URI — convert to ADO.NET format
+if (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')}" +
+                       $";Username={userInfo[0]};Password={Uri.UnescapeDataString(userInfo[1])}" +
+                       ";SSL Mode=Require;Trust Server Certificate=true";
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
