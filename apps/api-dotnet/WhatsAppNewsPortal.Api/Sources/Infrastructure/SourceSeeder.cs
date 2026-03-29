@@ -32,7 +32,7 @@ public static class SourceSeeder
             Id = new Guid("11111111-0000-0000-0000-000000000003"),
             Name = "WhatsApp API Documentation",
             Type = SourceType.Official,
-            BaseUrl = "https://developers.facebook.com/docs/whatsapp",
+            BaseUrl = "https://developers.facebook.com/blog",
             FeedUrl = null,
             IsActive = true
         },

@@ -229,12 +229,37 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ---
 
 ## Tarefa 28 — Popular o sistema com artigos reais
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Application/PipelineJobSettings.cs` — criado; classe de configuração com variáveis facilmente modificáveis: `IntervalMinutes` (dev: 5min, prod: 720min/12h), `RunOnStartup` (default: true), `MinPublishedDate` (default: 2026-03-28), `AutoPublishDrafts` (default: true)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/ContentPipelineJob.cs` — criado; `BackgroundService` que executa o pipeline automaticamente: uma vez no startup (após 5s de delay para migrations), depois no intervalo configurado; auto-publica drafts gerados; tratamento de erros robusto
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/PipelineOrchestrator.cs` — adicionado filtro por data mínima de publicação (`MinPublishedDate`); itens com `PublishedAt` anterior à data limite são ignorados (status `skipped_before_min_date`); itens sem data são processados normalmente
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — registrado `PipelineJobSettings` via `Configure<>` com leitura de env vars (`PIPELINE_INTERVAL_MINUTES`, `PIPELINE_RUN_ON_STARTUP`, `PIPELINE_MIN_DATE`, `PIPELINE_AUTO_PUBLISH`); registrado `ContentPipelineJob` como `HostedService`; dev usa 5min por padrão, prod usa 720min
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/appsettings.Development.json` — adicionadas variáveis de configuração do pipeline job para desenvolvimento
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/PipelineOrchestratorTests.cs` — atualizado para passar `IOptions<PipelineJobSettings>` ao construtor do `PipelineOrchestrator` (MinDate configurado para 2020 nos testes para não filtrar itens)
 - **Testes criados/executados:**
+  - 246 testes passando (nenhum quebrado pela alteração)
+  - `dotnet build` — 0 erros, 0 avisos
+- **Variáveis de configuração (env vars):**
+  - `PIPELINE_INTERVAL_MINUTES` — intervalo em minutos entre execuções (dev: 5, prod: 720)
+  - `PIPELINE_RUN_ON_STARTUP` — executar pipeline ao iniciar a API (default: true)
+  - `PIPELINE_MIN_DATE` — data mínima de publicação dos posts, formato yyyy-MM-dd (default: 2026-03-28)
+  - `PIPELINE_AUTO_PUBLISH` — publicar drafts automaticamente após pipeline (default: true)
 - **Validação manual:**
+  - Build compila sem erros
+  - Todos os 246 testes passam
+  - Background job configurado para rodar automaticamente ao iniciar a API
+  - Filtro de data impede busca de posts antigos que poluiriam o site
+  - Auto-publicação garante que artigos ficam visíveis sem intervenção manual
+- **Comportamento do job:**
+  - Em desenvolvimento: executa 1x no startup (após 5s) e depois a cada 5 minutos
+  - Em produção: executa 1x no startup e depois a cada 12 horas
+  - Se `PIPELINE_MIN_DATE` for alterado para `2026-03-01`, buscará posts a partir dessa data (ignorando os já existentes via dedup por URL)
+  - Distinção oficial/beta mantida: fontes `Official` geram `OfficialNews`, fontes `BetaSpecialized` geram `BetaNews`
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - HTML adapter (business.whatsapp.com, developers.facebook.com) não retorna `PublishedAt`, então esses itens não são filtrados por data (processados normalmente)
+  - Volume controlado pelo filtro de data e pela frequência do job
+- **Data de conclusão:** 2026-03-29
 
 ---
 

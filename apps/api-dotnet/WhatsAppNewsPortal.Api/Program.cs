@@ -95,7 +95,31 @@ builder.Services.AddScoped<IAiClassifier, GeminiClassifier>();
 builder.Services.AddScoped<IAiArticleGenerator, GeminiArticleGenerator>();
 
 // --- Pipeline ---
+// ============================================================
+// CONFIGURAÇÃO DO BACKGROUND JOB — MODIFIQUE AQUI OU VIA ENV VARS
+// ============================================================
+builder.Services.Configure<PipelineJobSettings>(settings =>
+{
+    // Intervalo: dev = 5min, prod = 720min (12h). Env var: PIPELINE_INTERVAL_MINUTES
+    var defaultInterval = builder.Environment.IsDevelopment() ? 5 : 720;
+    settings.IntervalMinutes = int.TryParse(builder.Configuration["PIPELINE_INTERVAL_MINUTES"], out var interval)
+        ? interval : defaultInterval;
+
+    // Executar ao iniciar? Env var: PIPELINE_RUN_ON_STARTUP (default: true)
+    settings.RunOnStartup = !bool.TryParse(builder.Configuration["PIPELINE_RUN_ON_STARTUP"], out var runOnStartup)
+        || runOnStartup;
+
+    // Data mínima dos posts (não busca posts anteriores a esta data). Env var: PIPELINE_MIN_DATE
+    settings.MinPublishedDate = DateTime.TryParse(builder.Configuration["PIPELINE_MIN_DATE"], out var minDate)
+        ? DateTime.SpecifyKind(minDate, DateTimeKind.Utc)
+        : new DateTime(2026, 3, 28, 0, 0, 0, DateTimeKind.Utc);
+
+    // Auto-publicar drafts após pipeline? Env var: PIPELINE_AUTO_PUBLISH (default: true)
+    settings.AutoPublishDrafts = !bool.TryParse(builder.Configuration["PIPELINE_AUTO_PUBLISH"], out var autoPublish)
+        || autoPublish;
+});
 builder.Services.AddScoped<IPipelineOrchestrator, PipelineOrchestrator>();
+builder.Services.AddHostedService<ContentPipelineJob>();
 
 // --- Demo ---
 builder.Services.AddScoped<IDemoPipelineService, DemoPipelineService>();

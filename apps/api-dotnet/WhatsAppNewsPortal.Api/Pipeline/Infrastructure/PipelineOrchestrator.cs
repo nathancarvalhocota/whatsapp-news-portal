@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
@@ -18,8 +19,10 @@ public class PipelineOrchestrator(
     IClassificationStep classificationStep,
     IArticleGenerationStep articleGenerationStep,
     IProcessingLogRepository processingLogRepository,
+    IOptions<PipelineJobSettings> jobSettings,
     ILogger<PipelineOrchestrator> logger) : IPipelineOrchestrator
 {
+    private readonly DateTime _minPublishedDate = jobSettings.Value.MinPublishedDate;
     public async Task<PipelineRunResultDto> RunAsync(CancellationToken ct = default)
     {
         var result = new PipelineRunResultDto { StartedAt = DateTime.UtcNow };
@@ -27,7 +30,8 @@ public class PipelineOrchestrator(
 
         using var scope = logger.BeginScope("CorrelationId={CorrelationId} Stage={PipelineStage}", correlationId, "orchestrator");
 
-        logger.LogInformation("[Pipeline] Iniciando execução do pipeline correlationId={CorrelationId}", correlationId);
+        logger.LogInformation("[Pipeline] Iniciando execução do pipeline correlationId={CorrelationId}, minDate={MinDate:yyyy-MM-dd}",
+            correlationId, _minPublishedDate);
 
         // Step 1: Get active sources
         var sources = await sourceRepository.GetActiveSourcesAsync(ct);
@@ -100,7 +104,18 @@ public class PipelineOrchestrator(
 
         try
         {
-            // Step 2: Dedup por URL original (pré-persistência).
+            // Step 2a: Filtro por data mínima de publicação.
+            // Posts com PublishedAt anterior à data limite são ignorados.
+            // Posts sem data (ex: HTML adapter) são processados normalmente.
+            if (discovered.PublishedAt.HasValue && discovered.PublishedAt.Value < _minPublishedDate)
+            {
+                logger.LogInformation("[Pipeline][{Source}] Item ignorado (anterior a {MinDate:yyyy-MM-dd}): {Title} ({Date:yyyy-MM-dd})",
+                    source.Name, _minPublishedDate, discovered.Title, discovered.PublishedAt.Value);
+                itemSummary.Status = "skipped_before_min_date";
+                return;
+            }
+
+            // Step 2b: Dedup por URL original (pré-persistência).
             // Limitação conhecida: não cobre duplicatas por canonical URL ou content hash.
             // Após normalização o item já está no DB, e IDeduplicationService encontra o próprio
             // item como "duplicado". Para resolver seria necessário extrair a canonicalização/hash

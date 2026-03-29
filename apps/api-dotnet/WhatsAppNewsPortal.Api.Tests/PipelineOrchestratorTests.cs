@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using WhatsAppNewsPortal.Api.AiGeneration.Application;
 using WhatsAppNewsPortal.Api.Articles.Application;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
 using WhatsAppNewsPortal.Api.Ingestion.Application;
+using WhatsAppNewsPortal.Api.Pipeline.Application;
 using WhatsAppNewsPortal.Api.Pipeline.Infrastructure;
 using WhatsAppNewsPortal.Api.Sources.Application;
 using WhatsAppNewsPortal.Api.Sources.Domain;
@@ -73,6 +75,11 @@ public class PipelineOrchestratorTests : IDisposable
             logRepo,
             Lf.CreateLogger<ArticleGenerationStep>());
 
+        var jobSettings = Options.Create(new PipelineJobSettings
+        {
+            MinPublishedDate = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
         return new PipelineOrchestrator(
             sourceRepo,
             rssAdapter ?? new FakeIngestionAdapter([]),
@@ -82,6 +89,7 @@ public class PipelineOrchestratorTests : IDisposable
             classificationStep,
             articleGenStep,
             logRepo,
+            jobSettings,
             Lf.CreateLogger<PipelineOrchestrator>());
     }
 

@@ -1063,19 +1063,20 @@ O sistema deve falhar de forma controlada.
 
 ---
 
-## Tarefa 28 — Popular o sistema com artigos reais
+## Tarefa 28 — Popular o sistema com artigos reais vindos de um fluxo de descoberta completo
 
 ### Objetivo
 Garantir que o portal esteja pronto para jurados verem resultado real.
 
 ### Implementar
+- background jobs que rodam duas vezes por dia (12h em 12h) buscando novos conteúdos nas fontes definidas. Enquanto em desenvolvimento o job deve ser executado uma vez assim que a API inicia e então de 5 em 5 minutos para que eu possa fazer os testes, faça com que a variavel que defina o tempo de execução dos jobs seja facilmente encontrada e modificavel. Além disso, defina uma data limite para que o job não busque todos os artigos das fontes e polua o site, também com uma variavel facilmente encontrada e modificavel, por enquanto só iremos buscar posts novos a partir do dia 28/03/2026. Se eu rodar a API depois e modificar a data para 01/03, o programa irá buscar posts publicados até essa data (obviamente, ignorando os ja existentes)
 - rodar pipeline real sobre fontes definidas;
 - gerar drafts válidos;
 - publicar um conjunto mínimo de artigos reais;
 - revisar rapidamente qualidade superficial dos textos.
 
 ### Resultado esperado
-Ao final, o site deve conter conteúdo real derivado das fontes do escopo.
+Ao final, o site deve conter conteúdo real derivado das fontes do escopo, dentro da data limite definida.
 
 ### Critérios de aceite
 - pelo menos alguns artigos reais publicados;
