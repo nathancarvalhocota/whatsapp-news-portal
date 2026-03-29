@@ -2,18 +2,13 @@ namespace WhatsAppNewsPortal.Api.Pipeline.Application;
 
 /// <summary>
 /// Configurações do background job do pipeline.
-/// Variáveis facilmente modificáveis para controle do agendamento e filtragem de conteúdo.
+/// Registrado como singleton mutável — alterações via /api/settings/pipeline
+/// são captadas pelo ContentPipelineJob no próximo ciclo.
 /// </summary>
 public class PipelineJobSettings
 {
-    // ============================================================
-    // VARIÁVEIS DE CONFIGURAÇÃO DO JOB
-    // ============================================================
-
     /// <summary>
     /// Intervalo entre execuções do pipeline em minutos.
-    /// Desenvolvimento: 5 (a cada 5 minutos para testes)
-    /// Produção: 720 (a cada 12 horas)
     /// Env var: PIPELINE_INTERVAL_MINUTES
     /// </summary>
     public int IntervalMinutes { get; set; } = 720;
@@ -27,7 +22,6 @@ public class PipelineJobSettings
     /// <summary>
     /// Data mínima de publicação dos posts a serem buscados (UTC).
     /// Posts com PublishedAt anterior a esta data são ignorados.
-    /// Posts sem data de publicação são processados normalmente.
     /// Formato: yyyy-MM-dd
     /// Env var: PIPELINE_MIN_DATE
     /// </summary>
@@ -38,4 +32,24 @@ public class PipelineJobSettings
     /// Env var: PIPELINE_AUTO_PUBLISH
     /// </summary>
     public bool AutoPublishDrafts { get; set; } = true;
+
+    // ============================================================
+    // Sinalização para interromper o delay do ContentPipelineJob
+    // quando settings são alteradas via admin em runtime.
+    // ============================================================
+    private CancellationTokenSource _delayCts = new();
+
+    /// <summary>Token que o job usa no Task.Delay — é cancelado por InterruptDelay().</summary>
+    public CancellationToken DelayCancellationToken => _delayCts.Token;
+
+    /// <summary>
+    /// Cancela o delay em andamento do job para que ele reinicie o ciclo
+    /// com os novos valores de configuração.
+    /// </summary>
+    public void InterruptDelay()
+    {
+        var old = Interlocked.Exchange(ref _delayCts, new CancellationTokenSource());
+        old.Cancel();
+        old.Dispose();
+    }
 }

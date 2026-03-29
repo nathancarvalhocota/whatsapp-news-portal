@@ -727,6 +727,9 @@ public class ArticleGenerationStepTests
             LastUpdatedItem = item;
             return Task.CompletedTask;
         }
+
+        public Task DeleteAsync(SourceItem item, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 
     private class FakeLogRepo : IProcessingLogRepository

@@ -367,9 +367,10 @@ public class PipelineOrchestratorTests : IDisposable
     }
 
     [Fact]
-    public async Task RunAsync_ClassificationError_SourceItemStatusIsPersistedAsFailed()
+    public async Task RunAsync_ClassificationError_SourceItemIsDeletedAndLogIsKept()
     {
-        // Quando a classificação falha, o SourceItem deve ter status Failed no banco.
+        // Quando a classificação falha, o SourceItem deve ser removido do banco
+        // para permitir reprocessamento, mas o ProcessingLog deve ser mantido.
         var source = CreateSource();
         var url = "https://blog.whatsapp.com/classify-fail-item";
         var items = new List<DiscoveredItemDto>
@@ -391,15 +392,18 @@ public class PipelineOrchestratorTests : IDisposable
 
         Assert.True(result.HasErrors);
         var sourceItem = await _db.SourceItems.FirstOrDefaultAsync(si => si.OriginalUrl == url);
-        Assert.NotNull(sourceItem);
-        Assert.Equal(PipelineStatus.Failed, sourceItem.Status);
-        Assert.NotNull(sourceItem.ErrorMessage);
+        Assert.Null(sourceItem);
+
+        // ProcessingLog deve existir para auditoria
+        var logs = await _db.ProcessingLogs.ToListAsync();
+        Assert.Contains(logs, l => l.StepName == "classification" && l.Status == "failed");
     }
 
     [Fact]
-    public async Task RunAsync_ArticleGenerationError_SourceItemStatusIsPersistedAsFailed()
+    public async Task RunAsync_ArticleGenerationError_SourceItemIsDeletedAndLogIsKept()
     {
-        // Quando a geração falha, o SourceItem deve ter status Failed no banco.
+        // Quando a geração falha, o SourceItem deve ser removido do banco
+        // para permitir reprocessamento, mas o ProcessingLog deve ser mantido.
         var source = CreateSource();
         var url = "https://blog.whatsapp.com/gen-fail-persist";
         var items = new List<DiscoveredItemDto>
@@ -421,9 +425,11 @@ public class PipelineOrchestratorTests : IDisposable
 
         Assert.True(result.HasErrors);
         var sourceItem = await _db.SourceItems.FirstOrDefaultAsync(si => si.OriginalUrl == url);
-        Assert.NotNull(sourceItem);
-        Assert.Equal(PipelineStatus.Failed, sourceItem.Status);
-        Assert.NotNull(sourceItem.ErrorMessage);
+        Assert.Null(sourceItem);
+
+        // ProcessingLog deve existir para auditoria
+        var logs = await _db.ProcessingLogs.ToListAsync();
+        Assert.Contains(logs, l => l.StepName == "article_generation" && l.Status == "failed");
     }
 
     [Fact]

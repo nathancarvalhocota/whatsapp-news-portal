@@ -274,6 +274,45 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 
 ---
 
+## Correção de produção 1 — Limpar source items com falha (delete em vez de Failed)
+- **Status:** concluída
+- **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Sources/Application/ISourceItemRepository.cs` — adicionado método `DeleteAsync`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Sources/Infrastructure/EfSourceItemRepository.cs` — implementação de `DeleteAsync`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/PipelineOrchestrator.cs` — `FailItemAsync` agora loga o ProcessingLog primeiro e depois deleta o SourceItem (antes: atualizava status para Failed)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/PipelineOrchestratorTests.cs` — 2 testes renomeados e atualizados: `ClassificationError_SourceItemIsDeletedAndLogIsKept`, `ArticleGenerationError_SourceItemIsDeletedAndLogIsKept`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticleGenerationStepTests.cs` — adicionado `DeleteAsync` no fake
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ClassificationStepTests.cs` — adicionado `DeleteAsync` no fake
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/DeduplicationServiceTests.cs` — adicionado `DeleteAsync` no fake
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/SourceItemNormalizerTests.cs` — adicionado `DeleteAsync` no fake
+- **Testes criados/executados:**
+  - 248 testes passando (1 falha pré-existente em `SourceSeederTests.Seed_WhatsAppBlog_Has_FeedUrl`, não relacionada)
+- **Motivação:** SourceItems com Status=Failed bloqueavam o pipeline — o dedup por URL os encontrava e ignorava, impedindo reprocessamento na próxima execução
+- **Comportamento novo:** falha em qualquer etapa (normalização, classificação, geração) → ProcessingLog mantido para auditoria → SourceItem deletado → próxima execução redescobre e reprocessa
+- **Data de conclusão:** 2026-03-29
+
+---
+
+## Correção de produção 2 — Persistir SourceItem somente após draft (versão simplificada)
+- **Status:** concluída
+- **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/PipelineOrchestrator.cs` — `sourceItem` movido para fora do `try` block; catch genérico agora deleta o SourceItem órfão se já foi persistido (com try/catch de segurança no delete)
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Infrastructure/DemoPipelineService.cs` — todos os caminhos de falha (normalização, classificação, descarte, geração) agora deletam o SourceItem via `DeleteSourceItemAsync`; adicionado método helper `DeleteSourceItemAsync` com try/catch de segurança
+- **Testes criados/executados:**
+  - 249 testes passando, 0 falhas
+- **Avaliação de risco:** refatoração completa (persistir somente após draft) foi avaliada e considerada de alto risco:
+  - `SourceItemNormalizer` chama `UpdateAsync` no SourceItem (ambos os caminhos sucesso/falha)
+  - `ClassificationStep` e `ArticleGenerationStep` buscam o SourceItem por ID do banco para atualizar status
+  - Estes steps são compartilhados com `DemoPipelineService` e endpoint `/reprocess` que exigem SourceItem persistido
+  - `Article` tem FK `Restrict` para SourceItem — deve existir antes da criação do artigo
+- **Versão simplificada implementada:** complementar ao Item 1. Todos os caminhos de falha agora removem o SourceItem:
+  - **PipelineOrchestrator:** normalização/classificação/geração → `FailItemAsync` → delete (Item 1); exceção inesperada → catch genérico → delete
+  - **DemoPipelineService:** normalização/classificação/descarte/geração → `DeleteSourceItemAsync` → delete
+  - Endpoint `/reprocess` mantido sem delete (ação manual do admin — pode tentar novamente)
+- **Data de conclusão:** 2026-03-29
+
+---
+
 ## Tarefa 29 — Deploy do banco no Render Postgres
 - **Status:** pendente
 - **Arquivos criados/alterados:**

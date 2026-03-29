@@ -301,6 +301,9 @@ public class DeduplicationServiceTests
 
         public Task UpdateAsync(SourceItem item, CancellationToken ct = default)
             => Task.CompletedTask;
+
+        public Task DeleteAsync(SourceItem item, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 
     private class FakeArticleRepo : IArticleRepository

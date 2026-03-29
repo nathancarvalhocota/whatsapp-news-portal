@@ -413,5 +413,8 @@ public class SourceItemNormalizerTests
             UpdatedItems.Add(item);
             return Task.CompletedTask;
         }
+
+        public Task DeleteAsync(SourceItem item, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 }

@@ -80,8 +80,8 @@ builder.Services.AddScoped<IArticlePublisher, ArticlePublisher>();
 builder.Services.Configure<GeminiSettings>(settings =>
 {
     settings.ApiKey = builder.Configuration["GEMINI_API_KEY"] ?? "";
-    settings.ClassificationModel = builder.Configuration["GEMINI_CLASSIFICATION_MODEL"] ?? "gemini-2.5-flash-lite";
-    settings.GenerationModel = builder.Configuration["GEMINI_GENERATION_MODEL"] ?? "gemini-2.5-flash";
+    settings.ClassificationModel = builder.Configuration["GEMINI_CLASSIFICATION_MODEL"] ?? "gemini-1.5-flash-latest";
+    settings.GenerationModel = builder.Configuration["GEMINI_GENERATION_MODEL"] ?? "gemini-1.5-flash-latest";
     if (int.TryParse(builder.Configuration["GEMINI_TIMEOUT_SECONDS"], out var timeout))
         settings.TimeoutSeconds = timeout;
 });
@@ -314,8 +314,15 @@ app.MapGet("/api/settings/pipeline", (PipelineJobSettings settings) =>
     });
 });
 
-app.MapPut("/api/settings/pipeline", (PipelineSettingsUpdateRequest req, PipelineJobSettings settings) =>
+app.MapPut("/api/settings/pipeline", (PipelineSettingsUpdateRequest req, PipelineJobSettings settings, ILogger<Program> logger) =>
 {
+    var prev = new
+    {
+        settings.IntervalMinutes,
+        MinPublishedDate = settings.MinPublishedDate.ToString("yyyy-MM-dd"),
+        settings.AutoPublishDrafts
+    };
+
     if (req.IntervalMinutes.HasValue)
     {
         if (req.IntervalMinutes.Value < 1) return Results.BadRequest(new { error = "intervalMinutes deve ser >= 1" });
@@ -329,6 +336,18 @@ app.MapPut("/api/settings/pipeline", (PipelineSettingsUpdateRequest req, Pipelin
     }
     if (req.AutoPublishDrafts.HasValue)
         settings.AutoPublishDrafts = req.AutoPublishDrafts.Value;
+
+    logger.LogInformation(
+        "[Settings] Pipeline settings atualizadas via admin — " +
+        "Intervalo: {PrevInterval}min → {NewInterval}min | " +
+        "MinDate: {PrevDate} → {NewDate} | " +
+        "AutoPublish: {PrevAuto} → {NewAuto}",
+        prev.IntervalMinutes, settings.IntervalMinutes,
+        prev.MinPublishedDate, settings.MinPublishedDate.ToString("yyyy-MM-dd"),
+        prev.AutoPublishDrafts, settings.AutoPublishDrafts);
+
+    // Interrompe o delay do job para que ele reinicie o ciclo com os novos valores
+    settings.InterruptDelay();
 
     return Results.Ok(new
     {

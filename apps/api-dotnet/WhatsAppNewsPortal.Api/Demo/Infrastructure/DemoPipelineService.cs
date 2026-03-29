@@ -109,7 +109,6 @@ public class DemoPipelineService(
             };
             await sourceItemRepository.AddAsync(sourceItem, ct);
             result.SourceItemId = sourceItem.Id;
-            result.Steps.Add("SourceItem created (IsDemoItem=true)");
             await LogStepAsync(sourceItem.Id, "demo_ingestion", "success", $"Demo item created: {url}", ct);
 
             // Step 7: Normalize (real pipeline step)
@@ -121,9 +120,7 @@ public class DemoPipelineService(
             }
             catch (Exception ex)
             {
-                sourceItem.Status = PipelineStatus.Failed;
-                sourceItem.ErrorMessage = $"[normalization] {ex.Message}";
-                await sourceItemRepository.UpdateAsync(sourceItem, ct);
+                await DeleteSourceItemAsync(sourceItem, result, ct);
                 result.Status = "failed_normalization";
                 result.ErrorMessage = ex.Message;
                 return result;
@@ -135,12 +132,14 @@ public class DemoPipelineService(
             var classResult = await classificationStep.ExecuteAsync(normalized, ct);
             if (!classResult.Success)
             {
+                await DeleteSourceItemAsync(sourceItem, result, ct);
                 result.Status = "failed_classification";
                 result.ErrorMessage = classResult.ErrorMessage ?? "Classification failed";
                 return result;
             }
             if (!classResult.IsRelevant)
             {
+                await DeleteSourceItemAsync(sourceItem, result, ct);
                 result.Status = "discarded";
                 result.ErrorMessage = $"Item classified as not relevant: {classResult.DiscardReason}";
                 return result;
@@ -152,6 +151,7 @@ public class DemoPipelineService(
             var genResult = await articleGenerationStep.ExecuteAsync(normalized, classResult.Classification!, ct);
             if (!genResult.Success)
             {
+                await DeleteSourceItemAsync(sourceItem, result, ct);
                 result.Status = "failed_generation";
                 result.ErrorMessage = genResult.ErrorMessage ?? "Article generation failed";
                 return result;
@@ -232,6 +232,20 @@ public class DemoPipelineService(
 
         logger.LogInformation("[Demo] Reset {Count} demo item(s) for URL: {Url}", demoItems.Count, url);
         return demoItems.Count;
+    }
+
+    private async Task DeleteSourceItemAsync(SourceItem sourceItem, DemoPipelineResultDto result, CancellationToken ct)
+    {
+        try
+        {
+            await sourceItemRepository.DeleteAsync(sourceItem, ct);
+            result.SourceItemId = null;
+            logger.LogInformation("[Demo] SourceItem {Id} removido após falha no pipeline demo", sourceItem.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "[Demo] Falha ao remover SourceItem {Id}", sourceItem.Id);
+        }
     }
 
     private async Task LogStepAsync(Guid sourceItemId, string step, string status, string? message, CancellationToken ct)

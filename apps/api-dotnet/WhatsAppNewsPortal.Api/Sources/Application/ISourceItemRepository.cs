@@ -10,4 +10,5 @@ public interface ISourceItemRepository
     Task<bool> ExistsByContentHashAsync(string contentHash, CancellationToken ct = default);
     Task AddAsync(SourceItem item, CancellationToken ct = default);
     Task UpdateAsync(SourceItem item, CancellationToken ct = default);
+    Task DeleteAsync(SourceItem item, CancellationToken ct = default);
 }

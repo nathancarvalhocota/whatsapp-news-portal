@@ -101,6 +101,7 @@ public class PipelineOrchestrator(
         };
         result.Items.Add(itemSummary);
 
+        SourceItem? sourceItem = null;
         try
         {
             // Step 2a: Filtro por data mínima de publicação.
@@ -129,7 +130,7 @@ public class PipelineOrchestrator(
             }
 
             // Step 3: Persist as SourceItem (Discovered)
-            var sourceItem = new SourceItem
+            sourceItem = new SourceItem
             {
                 Id = Guid.NewGuid(),
                 SourceId = source.Id,
@@ -202,6 +203,20 @@ public class PipelineOrchestrator(
             result.Errors.Add(error);
             itemSummary.Status = "error";
             itemSummary.Error = ex.Message;
+
+            // Limpar SourceItem órfão se já foi persistido
+            if (sourceItem is not null)
+            {
+                try
+                {
+                    await sourceItemRepository.DeleteAsync(sourceItem, ct);
+                    logger.LogInformation("[Pipeline] SourceItem {Id} removido após erro inesperado", sourceItem.Id);
+                }
+                catch (Exception deleteEx)
+                {
+                    logger.LogWarning(deleteEx, "[Pipeline] Falha ao remover SourceItem {Id} após erro", sourceItem.Id);
+                }
+            }
         }
     }
 
@@ -210,10 +225,10 @@ public class PipelineOrchestrator(
         PipelineItemSummary summary, PipelineRunResultDto result, CancellationToken ct)
     {
         logger.LogWarning("[Pipeline] Falha em {Step} para item {Id}: {Error}", step, sourceItem.Id, error);
-        sourceItem.Status = PipelineStatus.Failed;
-        sourceItem.ErrorMessage = $"[{step}] {error}";
-        await sourceItemRepository.UpdateAsync(sourceItem, ct);
         await LogStepAsync(sourceItem.Id, step, "failed", error, ct);
+        await sourceItemRepository.DeleteAsync(sourceItem, ct);
+        logger.LogInformation("[Pipeline] SourceItem {Id} removido após falha em {Step} (será redescoberto na próxima execução)",
+            sourceItem.Id, step);
         summary.Status = $"failed_{step}";
         summary.Error = error;
         result.Errors.Add($"[{sourceItem.Title}] {step}: {error}");

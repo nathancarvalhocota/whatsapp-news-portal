@@ -43,12 +43,28 @@ public class ContentPipelineJob : BackgroundService
             await RunPipelineSafeAsync(stoppingToken);
         }
 
-        var interval = TimeSpan.FromMinutes(_settings.IntervalMinutes);
-
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("[PipelineJob] Próxima execução em {Interval} minutos", _settings.IntervalMinutes);
-            await Task.Delay(interval, stoppingToken);
+            // Lê intervalo do singleton a cada ciclo — capta alterações feitas via admin em runtime
+            var interval = TimeSpan.FromMinutes(_settings.IntervalMinutes);
+            _logger.LogInformation(
+                "[PipelineJob] Próxima execução em {Interval} min | MinDate: {MinDate:yyyy-MM-dd} | AutoPublish: {AutoPublish}",
+                _settings.IntervalMinutes, _settings.MinPublishedDate, _settings.AutoPublishDrafts);
+
+            // Usa linked token: cancela se o app parar OU se as settings forem alteradas via admin
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                stoppingToken, _settings.DelayCancellationToken);
+            try
+            {
+                await Task.Delay(interval, linked.Token);
+            }
+            catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogInformation(
+                    "[PipelineJob] Delay interrompido — settings atualizadas via admin, reiniciando ciclo com intervalo {Interval} min",
+                    _settings.IntervalMinutes);
+                continue; // reinicia o loop, relê o novo intervalo
+            }
 
             if (!stoppingToken.IsCancellationRequested)
             {

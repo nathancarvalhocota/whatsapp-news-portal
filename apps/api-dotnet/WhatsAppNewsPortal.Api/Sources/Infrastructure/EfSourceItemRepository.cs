@@ -50,4 +50,10 @@ public class EfSourceItemRepository : ISourceItemRepository
         _db.SourceItems.Update(item);
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task DeleteAsync(SourceItem item, CancellationToken ct = default)
+    {
+        _db.SourceItems.Remove(item);
+        await _db.SaveChangesAsync(ct);
+    }
 }
