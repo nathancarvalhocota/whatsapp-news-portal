@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos para o corpo do artigo gerado pelo back-end */
+.prose h2 {
+  @apply text-xl font-bold mt-8 mb-3 text-gray-900;
+}
+.prose h3 {
+  @apply text-lg font-semibold mt-6 mb-2 text-gray-900;
+}
+.prose p {
+  @apply mb-4 leading-relaxed text-gray-700;
+}
+.prose ul {
+  @apply list-disc pl-6 mb-4 space-y-1 text-gray-700;
+}
+.prose ol {
+  @apply list-decimal pl-6 mb-4 space-y-1 text-gray-700;
+}
+.prose li {
+  @apply leading-relaxed;
+}
+.prose a {
+  @apply text-green-700 underline hover:text-green-900;
+}
+.prose blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic text-gray-500 my-4;
+}
+.prose strong {
+  @apply font-semibold text-gray-900;
+}
