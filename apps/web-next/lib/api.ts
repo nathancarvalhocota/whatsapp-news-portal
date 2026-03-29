@@ -34,8 +34,14 @@ export interface ArticleDetail {
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  // Durante o build estático da Vercel usa timeout curto para não travar.
+  // Em runtime (ISR / request) não limita — tolera o cold start do Render (~30s).
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+  const signal = isBuildTime ? AbortSignal.timeout(8000) : undefined;
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
+    ...(signal ? { signal } : {}),
     headers: { 'Content-Type': 'application/json', ...options?.headers },
   });
   if (!res.ok) {
