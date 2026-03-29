@@ -124,12 +124,25 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ---
 
 ## Tarefa 25 — Implementar botão ou rota operacional de demo/admin mínima
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/web-next/app/admin/page.tsx` — página `/admin` (client component) com gate de senha, 3 seções: Pipeline Real, Demo Pipeline (URL input + reset=false), Drafts pendentes
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — adicionado `GET /api/articles/drafts` para listar drafts pendentes
+  - `apps/web-next/.env.local` — adicionada `NEXT_PUBLIC_ADMIN_SECRET=hackathon2025`
+  - `apps/web-next/.env.example` — documentada variável `NEXT_PUBLIC_ADMIN_SECRET`
 - **Testes criados/executados:**
+  - `npm run build` — `/admin` compilada como Static (○), sem erros
+  - `dotnet build` — 0 erros, 0 avisos
 - **Validação manual:**
+  - Acesso a `/admin` apresenta gate de senha (senha: `hackathon2025`)
+  - **Pipeline Real**: botão dispara `POST /api/pipeline/run`, exibe contadores (processed/generated/failed/skipped)
+  - **Demo Pipeline**: campo URL + botão "Rodar Demo" → `POST /api/pipeline/run-demo` com `reset: false`; resultado inline com status, slug, article ID e botão "Publicar este artigo" se status=Draft
+  - **Drafts pendentes**: lista todos os drafts via `GET /api/articles/drafts`; botão "Publicar" por item → `POST /api/articles/{id}/publish`; link para o artigo publicado após sucesso
+  - Sem acesso manual ao banco necessário
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - `NEXT_PUBLIC_ADMIN_SECRET` fica exposto no bundle client-side — proteção suficiente para hackathon; não usar em produção real
+  - Definir `NEXT_PUBLIC_ADMIN_SECRET` na Vercel (env var) antes do deploy
+- **Data de conclusão:** 2026-03-29
 
 ---
 

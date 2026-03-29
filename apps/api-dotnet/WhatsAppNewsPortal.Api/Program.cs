@@ -161,6 +161,17 @@ app.MapGet("/api/sources", async (ISourceRepository repo, CancellationToken ct) 
     return Results.Ok(sources.Select(SourceDto.FromSource));
 });
 
+// --- Articles: list drafts (admin) ---
+app.MapGet("/api/articles/drafts", async (AppDbContext db, CancellationToken ct) =>
+{
+    var drafts = await db.Articles
+        .Where(a => a.Status == PipelineStatus.Draft)
+        .OrderByDescending(a => a.CreatedAt)
+        .Select(a => new { a.Id, a.Slug, a.Title, a.ArticleType, a.Category, a.CreatedAt })
+        .ToListAsync(ct);
+    return Results.Ok(drafts);
+});
+
 // --- Articles (admin actions) ---
 app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher publisher, CancellationToken ct) =>
 {
@@ -173,13 +184,6 @@ app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher
     {
         return Results.BadRequest(new { error = ex.Message });
     }
-});
-
-// --- Pipeline manual trigger ---
-app.MapPost("/api/pipeline/run", async (IPipelineOrchestrator orchestrator, CancellationToken ct) =>
-{
-    var result = await orchestrator.RunAsync(ct);
-    return Results.Ok(result);
 });
 
 // --- Demo pipeline ---
