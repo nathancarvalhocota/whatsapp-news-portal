@@ -23,8 +23,11 @@ public class PipelineOrchestrator(
     public async Task<PipelineRunResultDto> RunAsync(CancellationToken ct = default)
     {
         var result = new PipelineRunResultDto { StartedAt = DateTime.UtcNow };
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
 
-        logger.LogInformation("[Pipeline] Iniciando execução do pipeline");
+        using var scope = logger.BeginScope("CorrelationId={CorrelationId} Stage={PipelineStage}", correlationId, "orchestrator");
+
+        logger.LogInformation("[Pipeline] Iniciando execução do pipeline correlationId={CorrelationId}", correlationId);
 
         // Step 1: Get active sources
         var sources = await sourceRepository.GetActiveSourcesAsync(ct);

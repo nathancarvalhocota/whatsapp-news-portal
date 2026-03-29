@@ -7,20 +7,25 @@ namespace WhatsAppNewsPortal.Api.Articles.Infrastructure;
 public class ArticlePublisher : IArticlePublisher
 {
     private readonly IArticleRepository _articleRepo;
+    private readonly ILogger<ArticlePublisher> _logger;
 
-    public ArticlePublisher(IArticleRepository articleRepo)
+    public ArticlePublisher(IArticleRepository articleRepo, ILogger<ArticlePublisher> logger)
     {
         _articleRepo = articleRepo;
+        _logger = logger;
     }
 
     public async Task<PublishArticleResultDto> PublishAsync(Guid articleId, CancellationToken ct = default)
     {
+        _logger.LogInformation("[Publicação] Iniciando publicação do artigo {ArticleId}", articleId);
+
         var article = await _articleRepo.GetByIdAsync(articleId, ct)
             ?? throw new InvalidOperationException($"Article {articleId} not found.");
 
         // Idempotent: already published → return existing data
         if (article.Status == PipelineStatus.Published)
         {
+            _logger.LogInformation("[Publicação] Artigo já publicado (idempotente): {Slug}", article.Slug);
             return new PublishArticleResultDto
             {
                 ArticleId = article.Id,
@@ -34,14 +39,22 @@ public class ArticlePublisher : IArticlePublisher
 
         var errors = ValidateDraft(article);
         if (errors.Count > 0)
+        {
+            var errorSummary = string.Join("; ", errors);
+            _logger.LogWarning("[Publicação] Draft inválido {ArticleId}: {Errors}", articleId, errorSummary);
             throw new InvalidOperationException(
-                $"Draft {articleId} is not valid for publication: {string.Join("; ", errors)}");
+                $"Draft {articleId} is not valid for publication: {errorSummary}");
+        }
 
         article.Status = PipelineStatus.Published;
         article.PublishedAt = DateTime.UtcNow;
         article.UpdatedAt = DateTime.UtcNow;
 
         await _articleRepo.UpdateAsync(article, ct);
+
+        _logger.LogInformation(
+            "[Publicação] Artigo publicado: slug={Slug}, type={Type}, publishedAt={PublishedAt}",
+            article.Slug, article.ArticleType, article.PublishedAt.Value);
 
         return new PublishArticleResultDto
         {

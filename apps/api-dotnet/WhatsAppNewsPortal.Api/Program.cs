@@ -22,7 +22,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- Logging estruturado ---
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddSimpleConsole(options =>
+    {
+        options.IncludeScopes = true;
+        options.TimestampFormat = "HH:mm:ss ";
+    });
+}
+else
+{
+    builder.Logging.AddJsonConsole(options =>
+    {
+        options.IncludeScopes = true;
+    });
+}
 
 // --- PostgreSQL + EF Core ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -113,7 +127,12 @@ if (!app.Environment.IsEnvironment("Testing") &&
 app.UseCors();
 
 // --- Health check ---
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/health", (IWebHostEnvironment env) => Results.Ok(new
+{
+    status = "healthy",
+    timestamp = DateTime.UtcNow,
+    environment = env.EnvironmentName
+}));
 
 // --- Controller de teste ---
 app.MapGet("/api/ping", () => Results.Ok(new { message = "pong", timestamp = DateTime.UtcNow }));

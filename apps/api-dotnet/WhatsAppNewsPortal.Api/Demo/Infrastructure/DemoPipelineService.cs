@@ -35,6 +35,11 @@ public class DemoPipelineService(
             return result;
         }
 
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
+        using var scope = logger.BeginScope("CorrelationId={CorrelationId} Stage={PipelineStage}", correlationId, "demo");
+
+        logger.LogInformation("[Demo] Iniciando demo pipeline correlationId={CorrelationId} url={Url}", correlationId, url);
+
         try
         {
             // Step 1: Find matching source by domain

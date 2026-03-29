@@ -147,12 +147,22 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 ---
 
 ## Tarefa 26 — Implementar logs e observabilidade mínima
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — logging com `IncludeScopes=true`; `AddSimpleConsole` (dev) + `AddJsonConsole` (prod); health endpoint ampliado com `timestamp` e `environment`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticlePublisher.cs` — adicionado `ILogger<ArticlePublisher>`; logs de início, idempotência, validação e publicação bem-sucedida
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Pipeline/Infrastructure/PipelineOrchestrator.cs` — `ILogger.BeginScope` com `CorrelationId` (8 chars) e `PipelineStage=orchestrator` em cada execução
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Demo/Infrastructure/DemoPipelineService.cs` — `ILogger.BeginScope` com `CorrelationId` e `PipelineStage=demo` em cada execução demo
 - **Testes criados/executados:**
+  - `dotnet build` — 0 erros, 0 avisos
 - **Validação manual:**
+  - Logs distinguem: descoberta (`[Pipeline][Source]`), normalização, classificação, geração de draft, publicação (`[Publicação]`) e falha
+  - CorrelationId aparece em todos os logs de uma execução quando scopes estão ativos
+  - Health: `GET /health` retorna `{ status, timestamp, environment }`
+  - Nenhum segredo (API key) nos logs — `GeminiTextGenerationProvider` envia a key no header HTTP, não nos logs; erros truncados a 500 chars
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - `AddJsonConsole` requer que o ambiente de produção (Render) reconheça `ASPNETCORE_ENVIRONMENT=Production`; se não configurado, cai no branch dev (simple console, igualmente funcional)
+- **Data de conclusão:** 2026-03-29
 
 ---
 
