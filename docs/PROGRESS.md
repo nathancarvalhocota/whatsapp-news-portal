@@ -313,6 +313,32 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 
 ---
 
+## Correção de produção 3 — Configurar seletores HTML por fonte
+- **Status:** concluída
+- **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Ingestion/Infrastructure/HtmlIngestionAdapter.cs` — SourceConfigs atualizado:
+    - **blog.whatsapp.com** (NOVO): `ArticleLinkPattern = blog\.whatsapp\.com/\w+(-\w+){2,}` — exige 3+ palavras separadas por hyphens no slug; filtra navegação (links para www.whatsapp.com)
+    - **business.whatsapp.com** (ATUALIZADO): `ArticleLinkPattern = /blog/\w+(-\w+)+` — exige 2+ palavras no slug; filtra `/blog/` sem slug; `TitleSelector` adicionado `h5`
+    - **wabetainfo.com** (NOVO): `ArticleLinkSelector = h3.entry-title a` — seletor CSS específico para cards de artigo; `ArticleLinkPattern = wabetainfo\.com/\w+(-\w+){2,}` filtra paths curtos (/android/, /ios/)
+    - **developers.facebook.com**: mantido sem alterações
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/HtmlIngestionAdapterTests.cs` — 5 testes novos: config para blog.whatsapp.com, config para wabetainfo.com, filtragem de navegação para blog.whatsapp.com, filtragem para wabetainfo.com, filtragem de links genéricos para business.whatsapp.com
+- **Testes criados/executados:**
+  - 254 testes passando, 0 falhas (5 novos)
+- **Validação:** HTML real de cada fonte verificado via WebFetch; seletores CSS e padrões regex validados contra estrutura real
+- **Data de conclusão:** 2026-03-29
+
+---
+
+## Correção de produção 4 — Filtro de título mínimo na descoberta HTML
+- **Status:** concluída
+- **Arquivos criados/alterados:**
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Ingestion/Infrastructure/HtmlIngestionAdapter.cs` — `ParseListingPage`: adicionado `if (title.Length < 15) continue;` após a checagem de título vazio; elimina links de navegação com títulos curtos ("Log in", "Download", "Read more", "Careers", "Android", "iPhone")
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/HtmlIngestionAdapterTests.cs` — 1 teste novo (`ParseListingPage_FiltersShortTitles`); fixtures `DefaultSelectorFixture` e `DuplicateLinksFixture` atualizadas com títulos ≥ 15 chars
+- **Testes criados/executados:** 255 testes passando, 0 falhas
+- **Data de conclusão:** 2026-03-29
+
+---
+
 ## Tarefa 29 — Deploy do banco no Render Postgres
 - **Status:** pendente
 - **Arquivos criados/alterados:**

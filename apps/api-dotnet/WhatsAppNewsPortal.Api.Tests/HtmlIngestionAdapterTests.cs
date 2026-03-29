@@ -69,17 +69,17 @@ public class HtmlIngestionAdapterTests
     private const string DuplicateLinksFixture = """
         <!DOCTYPE html>
         <html><body>
-          <a href="/blog/post-1">Post 1</a>
-          <a href="/blog/post-1">Post 1 Again</a>
-          <a href="/blog/post-2">Post 2</a>
+          <a href="/blog/post-1">WhatsApp Announces New Feature One</a>
+          <a href="/blog/post-1">WhatsApp Announces New Feature One Again</a>
+          <a href="/blog/post-2">WhatsApp Announces New Feature Two</a>
         </body></html>
         """;
 
     private const string DefaultSelectorFixture = """
         <!DOCTYPE html>
         <html><body>
-          <a href="https://example.com/article-1">Article One</a>
-          <a href="https://example.com/article-2">Article Two</a>
+          <a href="https://example.com/article-1">Article One: Full Title</a>
+          <a href="https://example.com/article-2">Article Two: Full Title</a>
           <a href="#">Anchor only</a>
           <a href="">Empty href</a>
         </body></html>
@@ -276,6 +276,31 @@ public class HtmlIngestionAdapterTests
     }
 
     // -----------------------------------------------------------------------
+    // Minimum title length filter
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void ParseListingPage_FiltersShortTitles()
+    {
+        var html = """
+            <html><body>
+              <a href="https://example.com/log-in">Log in</a>
+              <a href="https://example.com/download">Download</a>
+              <a href="https://example.com/read-more">Read more</a>
+              <a href="https://example.com/real-article">WhatsApp Announces New Feature for Users</a>
+            </body></html>
+            """;
+        var source = MakeSource(baseUrl: "https://example.com");
+        var config = new HtmlSourceParserConfig();
+        var adapter = MakeAdapter(html);
+
+        var items = adapter.ParseListingPage(html, source, config);
+
+        Assert.Single(items);
+        Assert.Contains("WhatsApp Announces", items[0].Title);
+    }
+
+    // -----------------------------------------------------------------------
     // URL resolution
     // -----------------------------------------------------------------------
 
@@ -399,6 +424,17 @@ public class HtmlIngestionAdapterTests
     // -----------------------------------------------------------------------
 
     [Fact]
+    public void GetConfigForSource_ReturnsConfigForWhatsAppBlog()
+    {
+        var adapter = MakeAdapter(string.Empty);
+        var source = MakeSource("https://blog.whatsapp.com");
+
+        var config = adapter.GetConfigForSource(source);
+
+        Assert.Contains(@"blog\.whatsapp\.com", config.ArticleLinkPattern!);
+    }
+
+    [Fact]
     public void GetConfigForSource_ReturnsConfigForBusinessBlog()
     {
         var adapter = MakeAdapter(string.Empty);
@@ -422,6 +458,20 @@ public class HtmlIngestionAdapterTests
     }
 
     [Fact]
+    public void GetConfigForSource_ReturnsConfigForWABetaInfo()
+    {
+        var adapter = MakeAdapter(string.Empty);
+        var source = MakeSource("https://wabetainfo.com");
+
+        var config = adapter.GetConfigForSource(source);
+
+        Assert.Contains(@"wabetainfo\.com", config.ArticleLinkPattern!);
+        Assert.Contains("entry-title", config.ArticleLinkSelector);
+        Assert.Contains("entry-read-more", config.ArticleLinkSelector);
+        Assert.Equal(0, config.MinTitleLength);
+    }
+
+    [Fact]
     public void GetConfigForSource_ReturnsDefaultForUnknownSource()
     {
         var adapter = MakeAdapter(string.Empty);
@@ -431,6 +481,111 @@ public class HtmlIngestionAdapterTests
 
         Assert.Equal("a[href]", config.ArticleLinkSelector);
         Assert.Null(config.ArticleLinkPattern);
+    }
+
+    // -----------------------------------------------------------------------
+    // URL pattern filtering — blog.whatsapp.com
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void ParseListingPage_WhatsAppBlog_FiltersNavigationLinks()
+    {
+        var html = """
+            <html><body>
+              <nav>
+                <a href="https://www.whatsapp.com/">Home</a>
+                <a href="https://whatsapp.com/download">Download</a>
+                <a href="https://www.whatsapp.com/careers">Careers</a>
+              </nav>
+              <a href="https://blog.whatsapp.com/new-feature-roundup-free-up-space-and-more">
+                New Feature Roundup: Free Up Space and More
+              </a>
+              <a href="https://blog.whatsapp.com/introducing-voice-chat-for-large-groups">
+                Introducing Voice Chat for Large Groups
+              </a>
+            </body></html>
+            """;
+        var source = MakeSource("https://blog.whatsapp.com");
+        var config = HtmlIngestionAdapter.GetParserConfigForHost("https://blog.whatsapp.com/any");
+        var adapter = MakeAdapter(html);
+
+        var items = adapter.ParseListingPage(html, source, config);
+
+        Assert.Equal(2, items.Count);
+        Assert.All(items, i => Assert.Contains("blog.whatsapp.com", i.OriginalUrl));
+        Assert.DoesNotContain(items, i => i.Title.Contains("Download"));
+        Assert.DoesNotContain(items, i => i.Title.Contains("Careers"));
+    }
+
+    // -----------------------------------------------------------------------
+    // URL pattern filtering — wabetainfo.com
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void ParseListingPage_WABetaInfo_FiltersNavigationLinksAndDeduplicates()
+    {
+        // Real wabetainfo structure: h3.entry-title a (title link) + a.entry-read-more ("Open the post")
+        // both point to the same URL. Dedup should keep the real title from h3.entry-title.
+        var html = """
+            <html><body>
+              <nav>
+                <a href="/android/">Android</a>
+                <a href="/ios/">iOS</a>
+              </nav>
+              <article class="card">
+                <h3 class="entry-title">
+                  <a href="https://wabetainfo.com/whatsapp-is-working-on-custom-audiences-for-status/">
+                    WhatsApp is working on custom audiences for status
+                  </a>
+                </h3>
+                <a class="kenta-button entry-read-more" href="https://wabetainfo.com/whatsapp-is-working-on-custom-audiences-for-status/">
+                  Open the post
+                </a>
+              </article>
+              <article class="card">
+                <a class="kenta-button entry-read-more" href="https://wabetainfo.com/whatsapp-beta-for-android-tests-private-summaries/">
+                  Open the post
+                </a>
+              </article>
+            </body></html>
+            """;
+        var source = MakeSource("https://wabetainfo.com");
+        var config = HtmlIngestionAdapter.GetParserConfigForHost("https://wabetainfo.com/any");
+        var adapter = MakeAdapter(html);
+
+        var items = adapter.ParseListingPage(html, source, config);
+
+        // 2 unique articles: one has real title (dedup keeps h3 link), other only has "Open the post"
+        Assert.Equal(2, items.Count);
+        Assert.DoesNotContain(items, i => i.Title is "Android" or "iOS");
+        // First article: real title wins over "Open the post" via dedup
+        Assert.Contains(items, i => i.Title.Contains("WhatsApp is working"));
+        // Second article: only "Open the post" button exists, still discovered (MinTitleLength=0)
+        Assert.Contains(items, i => i.Title.Contains("Open the post"));
+    }
+
+    // -----------------------------------------------------------------------
+    // URL pattern filtering — business.whatsapp.com
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void ParseListingPage_BusinessBlog_FiltersGenericBlogLinks()
+    {
+        var html = """
+            <html><body>
+              <nav><a href="/blog/">Blog Home</a></nav>
+              <a href="/blog/ecommerce-order-management">Ecommerce Order Management</a>
+              <a href="/blog/remarketing-ads-guide">Remarketing Ads Guide</a>
+            </body></html>
+            """;
+        var source = MakeSource("https://business.whatsapp.com/blog");
+        var config = HtmlIngestionAdapter.GetParserConfigForHost("https://business.whatsapp.com/blog/any");
+        var adapter = MakeAdapter(html);
+
+        var items = adapter.ParseListingPage(html, source, config);
+
+        Assert.Equal(2, items.Count);
+        Assert.DoesNotContain(items, i => i.Title == "Blog Home");
     }
 
     // -----------------------------------------------------------------------

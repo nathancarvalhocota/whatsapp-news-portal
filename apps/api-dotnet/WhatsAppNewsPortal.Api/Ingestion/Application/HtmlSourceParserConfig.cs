@@ -19,4 +19,7 @@ public class HtmlSourceParserConfig
 
     /// <summary>CSS selector for publication date (optional).</summary>
     public string? DateSelector { get; init; }
+
+    /// <summary>Minimum title character length to accept a link (0 = no minimum).</summary>
+    public int MinTitleLength { get; init; } = 15;
 }

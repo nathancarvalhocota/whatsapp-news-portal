@@ -3,7 +3,11 @@
     "allow": [
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
-      "Bash(node node_modules/jest-cli/bin/jest.js --no-coverage)"
+      "Bash(node node_modules/jest-cli/bin/jest.js --no-coverage)",
+      "WebFetch(domain:blog.whatsapp.com)",
+      "WebFetch(domain:business.whatsapp.com)",
+      "WebFetch(domain:wabetainfo.com)",
+      "WebFetch(domain:developers.facebook.com)"
     ]
   }
 }

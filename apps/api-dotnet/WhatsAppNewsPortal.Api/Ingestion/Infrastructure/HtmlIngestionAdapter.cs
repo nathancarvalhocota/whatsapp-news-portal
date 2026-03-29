@@ -18,11 +18,22 @@ public class HtmlIngestionAdapter : IIngestionAdapter
 
     private static readonly Dictionary<string, HtmlSourceParserConfig> SourceConfigs = new(StringComparer.OrdinalIgnoreCase)
     {
+        ["blog.whatsapp.com"] = new HtmlSourceParserConfig
+        {
+            // Articles have long slugs with 3+ hyphen-separated words directly under the domain.
+            // Navigation links point to www.whatsapp.com (different host) and are filtered by pattern.
+            ArticleLinkSelector = "a[href]",
+            ArticleLinkPattern = @"blog\.whatsapp\.com/\w+(-\w+){2,}",
+            TitleSelector = "h1, h2",
+            ContentSelector = "article, main"
+        },
         ["business.whatsapp.com"] = new HtmlSourceParserConfig
         {
+            // Articles live under /blog/ with hyphenated slugs (e.g. /blog/ecommerce-order-management).
+            // Pattern requires at least 2 hyphen-separated words to filter generic /blog links.
             ArticleLinkSelector = "a[href*='/blog/']",
-            ArticleLinkPattern = @"/blog/.+",
-            TitleSelector = "h1, .post-title",
+            ArticleLinkPattern = @"/blog/\w+(-\w+)+",
+            TitleSelector = "h1, h5, .post-title",
             ContentSelector = "article, .blog-post-content, .post-body, main",
             DateSelector = "time[datetime], .post-date"
         },
@@ -32,6 +43,18 @@ public class HtmlIngestionAdapter : IIngestionAdapter
             ArticleLinkPattern = @"/docs/whatsapp/.+",
             TitleSelector = "h1",
             ContentSelector = "article, .content, main"
+        },
+        ["wabetainfo.com"] = new HtmlSourceParserConfig
+        {
+            // Primary: title links inside h3.entry-title. Fallback: "Open the post" button (a.entry-read-more).
+            // Both selectors are queried; document order ensures the real title wins via URL dedup.
+            // MinTitleLength = 0 because the selectors are already specific to article elements.
+            ArticleLinkSelector = "h3.entry-title a, a.entry-read-more",
+            ArticleLinkPattern = @"wabetainfo\.com/\w+(-\w+){2,}",
+            MinTitleLength = 0,
+            TitleSelector = "h1, h2, .entry-title",
+            ContentSelector = "article, .entry-content, main",
+            DateSelector = "time[datetime], .entry-date"
         }
     };
 
@@ -127,6 +150,7 @@ public class HtmlIngestionAdapter : IIngestionAdapter
 
             var title = link.TextContent?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(title)) continue;
+            if (config.MinTitleLength > 0 && title.Length < config.MinTitleLength) continue;
 
             result.Add(new DiscoveredItemDto
             {

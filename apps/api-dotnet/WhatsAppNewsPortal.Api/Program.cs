@@ -80,8 +80,8 @@ builder.Services.AddScoped<IArticlePublisher, ArticlePublisher>();
 builder.Services.Configure<GeminiSettings>(settings =>
 {
     settings.ApiKey = builder.Configuration["GEMINI_API_KEY"] ?? "";
-    settings.ClassificationModel = builder.Configuration["GEMINI_CLASSIFICATION_MODEL"] ?? "gemini-1.5-flash-latest";
-    settings.GenerationModel = builder.Configuration["GEMINI_GENERATION_MODEL"] ?? "gemini-1.5-flash-latest";
+    settings.ClassificationModel = builder.Configuration["GEMINI_CLASSIFICATION_MODEL"] ?? "gemini-2.5-flash-lite";
+    settings.GenerationModel = builder.Configuration["GEMINI_GENERATION_MODEL"] ?? "gemini-2.5-flash";
     if (int.TryParse(builder.Configuration["GEMINI_TIMEOUT_SECONDS"], out var timeout))
         settings.TimeoutSeconds = timeout;
 });
