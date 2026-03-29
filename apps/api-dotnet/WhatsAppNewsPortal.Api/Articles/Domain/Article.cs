@@ -22,4 +22,5 @@ public class Article
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public Sources.Domain.SourceItem SourceItem { get; set; } = null!;
+    public ICollection<ArticleSourceReference> SourceReferences { get; set; } = [];
 }

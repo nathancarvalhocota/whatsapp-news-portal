@@ -446,22 +446,46 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (`/
 ---
 
 ## Tarefa 15 — Persistir draft e referências de origem
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `WhatsAppNewsPortal.Api/Articles/Domain/Article.cs` — adicionada navigation property `SourceReferences` (ICollection<ArticleSourceReference>)
+  - `WhatsAppNewsPortal.Api/Infrastructure/Data/AppDbContext.cs` — relacionamento ArticleSourceReference atualizado para usar `WithMany(a => a.SourceReferences)`
+  - `WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticleGenerationStep.cs` — ao gerar draft, agora cria `ArticleSourceReference` com SourceName, SourceUrl e ReferenceType="primary"; reutiliza SourceItem já carregado para evitar query extra; fallback para hostname quando Source não encontrado
+  - `WhatsAppNewsPortal.Api.Tests/ArticleGenerationStepTests.cs` — FakeSourceItemRepo atualizado para retornar Source populado; 4 novos testes adicionados
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `Golden_OfficialArticle_PersistsSourceReference` — valida referência de origem com nome "WhatsApp Blog"
+  - `Golden_BetaArticle_PersistsSourceReference` — valida referência de origem com nome "WABetaInfo"
+  - `DraftHasNoEssentialFieldsMissing` — valida que nenhum campo essencial do draft está vazio (Id, SourceItemId, Slug, Title, Excerpt, ContentHtml, MetaTitle, MetaDescription, Tags, Category, Status, ArticleType, SourceReferences)
+  - `SourceNameFallsBackToHostWhenSourceNotFound` — valida fallback para hostname da URL quando SourceItem não encontrado
+  - Total: 189 testes passando (23 no ArticleGenerationStepTests)
+- **Validação manual:** build sem erros, 0 warnings; todos os 189 testes passam; draft é criado com status Draft, SourceItemId associado, tipo editorial, metadados SEO e referência de origem persistidos corretamente
+- **Riscos/pendências:** nenhum
+- **Data de conclusão:** 2026-03-28
 
 ---
 
 ## Tarefa 16 — Implementar publicação manual do draft
-- **Status:** pendente
+- **Status:** concluída
 - **Arquivos criados/alterados:**
+  - `WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticlePublisher.cs` — implementação de IArticlePublisher: valida integridade do draft (Title, Excerpt, ContentHtml com HTML, Slug, MetaTitle, MetaDescription), transiciona status para Published, preenche PublishedAt, idempotente para artigos já publicados
+  - `WhatsAppNewsPortal.Api/Program.cs` — DI: IArticlePublisher → ArticlePublisher; endpoint POST /api/articles/{id:guid}/publish
+  - `WhatsAppNewsPortal.Api.Tests/ArticlePublisherTests.cs` — 11 testes unitários
 - **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
+  - `Publish_ValidDraft_TransitionsToPublished` — draft válido vira published com PublishedAt preenchido
+  - `Publish_AlreadyPublished_ReturnsExistingData` — idempotência: retorna dados existentes sem chamar Update
+  - `Publish_Twice_SecondCallReturnsSameResult` — dupla publicação retorna mesmo resultado
+  - `Publish_ArticleNotFound_Throws` — artigo inexistente lança InvalidOperationException
+  - `Publish_NotDraftStatus_Throws` — status Failed não publica
+  - `Publish_ProcessingStatus_Throws` — status Processing não publica
+  - `Publish_DraftMissingTitle_Throws` — draft sem título não publica
+  - `Publish_DraftMissingContentHtml_Throws` — draft sem conteúdo não publica
+  - `Publish_DraftWithPlainTextContent_Throws` — draft com texto sem HTML não publica
+  - `Publish_DraftMissingSlug_Throws` — draft sem slug não publica
+  - `Publish_DraftMissingMultipleFields_ReportsAll` — múltiplos erros reportados
+  - Total: 200 testes passando (11 novos no ArticlePublisherTests)
+- **Validação manual:** `dotnet build` compila sem erros; `dotnet test` — 200 testes aprovados, 0 falhas; endpoint POST /api/articles/{id}/publish retorna 200 com ArticleId/Slug/PublishedAt ou 400 com mensagem de erro
+- **Riscos/pendências:** nenhum
+- **Data de conclusão:** 2026-03-28
 
 ---
 

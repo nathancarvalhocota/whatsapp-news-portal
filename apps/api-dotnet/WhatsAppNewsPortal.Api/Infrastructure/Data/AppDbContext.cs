@@ -136,7 +136,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.ArticleId);
 
             entity.HasOne(e => e.Article)
-                  .WithMany()
+                  .WithMany(a => a.SourceReferences)
                   .HasForeignKey(e => e.ArticleId)
                   .OnDelete(DeleteBehavior.Cascade);
         });

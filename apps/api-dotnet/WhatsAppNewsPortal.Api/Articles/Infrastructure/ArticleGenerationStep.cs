@@ -5,6 +5,7 @@ using WhatsAppNewsPortal.Api.Articles.Domain;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 using WhatsAppNewsPortal.Api.Sources.Application;
+using WhatsAppNewsPortal.Api.Sources.Domain;
 
 namespace WhatsAppNewsPortal.Api.Articles.Infrastructure;
 
@@ -84,7 +85,7 @@ public class ArticleGenerationStep : IArticleGenerationStep
         // 5. Ensure slug uniqueness
         var slug = await EnsureUniqueSlugAsync(classification.Slug, ct);
 
-        // 6. Create the draft Article
+        // 6. Create the draft Article with source references
         var article = new Article
         {
             Id = Guid.NewGuid(),
@@ -102,12 +103,28 @@ public class ArticleGenerationStep : IArticleGenerationStep
                 ? "beta" : "oficial"
         };
 
+        // 7. Persist source references for editorial traceability
+        var sourceItem = await _sourceItemRepo.GetByIdAsync(item.SourceItemId, ct);
+        var sourceName = sourceItem?.Source?.Name ?? new Uri(item.OriginalUrl).Host;
+
+        article.SourceReferences =
+        [
+            new ArticleSourceReference
+            {
+                Id = Guid.NewGuid(),
+                ArticleId = article.Id,
+                SourceName = sourceName,
+                SourceUrl = item.OriginalUrl,
+                ReferenceType = "primary"
+            }
+        ];
+
         await _articleRepo.AddAsync(article, ct);
 
-        // 7. Update SourceItem status to Draft
-        await UpdateSourceItemToDraftAsync(item.SourceItemId, ct);
+        // 8. Update SourceItem status to Draft
+        await UpdateSourceItemToDraftAsync(sourceItem, ct);
 
-        // 8. Log success
+        // 9. Log success
         await LogAsync(item.SourceItemId, "success",
             $"Draft created: slug={slug}, articleId={article.Id}", ct);
 
@@ -141,9 +158,8 @@ public class ArticleGenerationStep : IArticleGenerationStep
         return slug;
     }
 
-    private async Task UpdateSourceItemToDraftAsync(Guid sourceItemId, CancellationToken ct)
+    private async Task UpdateSourceItemToDraftAsync(SourceItem? sourceItem, CancellationToken ct)
     {
-        var sourceItem = await _sourceItemRepo.GetByIdAsync(sourceItemId, ct);
         if (sourceItem is null) return;
 
         sourceItem.Status = PipelineStatus.Draft;

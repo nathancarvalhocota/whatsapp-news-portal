@@ -70,7 +70,7 @@ public class ArticleGenerationStepTests
 
         var generator = new FakeGenerator(generated);
         var articleRepo = new FakeArticleRepo();
-        var sourceItemRepo = new FakeSourceItemRepo(item.SourceItemId);
+        var sourceItemRepo = new FakeSourceItemRepo(item.SourceItemId, "WABetaInfo");
         var logRepo = new FakeLogRepo();
 
         var step = BuildStep(generator, articleRepo, sourceItemRepo, logRepo);
@@ -94,6 +94,121 @@ public class ArticleGenerationStepTests
         Assert.Equal(PipelineStatus.Draft, sourceItemRepo.LastUpdatedItem!.Status);
         Assert.Single(logRepo.Logs);
         Assert.Equal("success", logRepo.Logs[0].Status);
+    }
+
+    [Fact]
+    public async Task Golden_OfficialArticle_PersistsSourceReference()
+    {
+        var item = Fixtures.OfficialItem();
+        var classification = Fixtures.OfficialClassification();
+        var generated = Fixtures.OfficialGeneratedArticle();
+
+        var generator = new FakeGenerator(generated);
+        var articleRepo = new FakeArticleRepo();
+        var sourceItemRepo = new FakeSourceItemRepo(item.SourceItemId, "WhatsApp Blog");
+
+        var step = BuildStep(generator, articleRepo, sourceItemRepo);
+        var result = await step.ExecuteAsync(item, classification);
+
+        Assert.True(result.Success);
+
+        var article = articleRepo.Added!;
+        Assert.Single(article.SourceReferences);
+
+        var reference = article.SourceReferences.First();
+        Assert.Equal(article.Id, reference.ArticleId);
+        Assert.Equal("WhatsApp Blog", reference.SourceName);
+        Assert.Equal(item.OriginalUrl, reference.SourceUrl);
+        Assert.Equal("primary", reference.ReferenceType);
+        Assert.NotEqual(Guid.Empty, reference.Id);
+    }
+
+    [Fact]
+    public async Task Golden_BetaArticle_PersistsSourceReference()
+    {
+        var item = Fixtures.BetaItem();
+        var classification = Fixtures.BetaClassification();
+        var generated = Fixtures.BetaGeneratedArticle();
+
+        var generator = new FakeGenerator(generated);
+        var articleRepo = new FakeArticleRepo();
+        var sourceItemRepo = new FakeSourceItemRepo(item.SourceItemId, "WABetaInfo");
+
+        var step = BuildStep(generator, articleRepo, sourceItemRepo);
+        var result = await step.ExecuteAsync(item, classification);
+
+        Assert.True(result.Success);
+
+        var article = articleRepo.Added!;
+        Assert.Single(article.SourceReferences);
+
+        var reference = article.SourceReferences.First();
+        Assert.Equal("WABetaInfo", reference.SourceName);
+        Assert.Equal(item.OriginalUrl, reference.SourceUrl);
+        Assert.Equal("primary", reference.ReferenceType);
+    }
+
+    [Fact]
+    public async Task DraftHasNoEssentialFieldsMissing()
+    {
+        var item = Fixtures.OfficialItem();
+        var classification = Fixtures.OfficialClassification();
+        var generated = Fixtures.OfficialGeneratedArticle();
+
+        var generator = new FakeGenerator(generated);
+        var articleRepo = new FakeArticleRepo();
+        var sourceItemRepo = new FakeSourceItemRepo(item.SourceItemId);
+
+        var step = BuildStep(generator, articleRepo, sourceItemRepo);
+        var result = await step.ExecuteAsync(item, classification);
+
+        Assert.True(result.Success);
+
+        var article = articleRepo.Added!;
+
+        // All essential fields must be populated
+        Assert.NotEqual(Guid.Empty, article.Id);
+        Assert.NotEqual(Guid.Empty, article.SourceItemId);
+        Assert.Equal(item.SourceItemId, article.SourceItemId);
+        Assert.False(string.IsNullOrWhiteSpace(article.Slug));
+        Assert.False(string.IsNullOrWhiteSpace(article.Title));
+        Assert.False(string.IsNullOrWhiteSpace(article.Excerpt));
+        Assert.False(string.IsNullOrWhiteSpace(article.ContentHtml));
+        Assert.False(string.IsNullOrWhiteSpace(article.MetaTitle));
+        Assert.False(string.IsNullOrWhiteSpace(article.MetaDescription));
+        Assert.NotEmpty(article.Tags);
+        Assert.False(string.IsNullOrWhiteSpace(article.Category));
+        Assert.Equal(PipelineStatus.Draft, article.Status);
+        Assert.Equal(classification.EditorialType, article.ArticleType);
+        Assert.Null(article.PublishedAt);
+
+        // Source reference must be present
+        Assert.NotEmpty(article.SourceReferences);
+    }
+
+    [Fact]
+    public async Task SourceNameFallsBackToHostWhenSourceNotFound()
+    {
+        var item = Fixtures.OfficialItem();
+        var classification = Fixtures.OfficialClassification();
+        var generated = Fixtures.OfficialGeneratedArticle();
+
+        var generator = new FakeGenerator(generated);
+        var articleRepo = new FakeArticleRepo();
+        // Pass null sourceItemId so GetByIdAsync returns null
+        var sourceItemRepo = new FakeSourceItemRepo(null);
+
+        var step = BuildStep(generator, articleRepo, sourceItemRepo);
+        var result = await step.ExecuteAsync(item, classification);
+
+        Assert.True(result.Success);
+
+        var article = articleRepo.Added!;
+        Assert.Single(article.SourceReferences);
+
+        var reference = article.SourceReferences.First();
+        Assert.Equal("blog.whatsapp.com", reference.SourceName);
+        Assert.Equal(item.OriginalUrl, reference.SourceUrl);
     }
 
     [Fact]
@@ -567,9 +682,14 @@ public class ArticleGenerationStepTests
     private class FakeSourceItemRepo : ISourceItemRepository
     {
         private readonly Guid? _existingId;
+        private readonly string _sourceName;
         public SourceItem? LastUpdatedItem { get; private set; }
 
-        public FakeSourceItemRepo(Guid? sourceItemId) => _existingId = sourceItemId;
+        public FakeSourceItemRepo(Guid? sourceItemId, string sourceName = "WhatsApp Blog")
+        {
+            _existingId = sourceItemId;
+            _sourceName = sourceName;
+        }
 
         public Task<SourceItem?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
@@ -579,7 +699,14 @@ public class ArticleGenerationStepTests
             {
                 Id = id, SourceId = Guid.NewGuid(),
                 OriginalUrl = "https://example.com", Title = "Test",
-                Status = PipelineStatus.Processing
+                Status = PipelineStatus.Processing,
+                Source = new Source
+                {
+                    Id = Guid.NewGuid(),
+                    Name = _sourceName,
+                    Type = SourceType.Official,
+                    BaseUrl = "https://blog.whatsapp.com"
+                }
             };
             return Task.FromResult<SourceItem?>(item);
         }

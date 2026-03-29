@@ -2,13 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using WhatsAppNewsPortal.Api.AiGeneration.Application;
 using WhatsAppNewsPortal.Api.AiGeneration.Infrastructure;
 using WhatsAppNewsPortal.Api.Articles.Application;
+using WhatsAppNewsPortal.Api.Articles.Domain;
 using WhatsAppNewsPortal.Api.Articles.Infrastructure;
+using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.Infrastructure.Data;
 using WhatsAppNewsPortal.Api.ContentProcessing.Application;
 using WhatsAppNewsPortal.Api.ContentProcessing.Infrastructure;
 using WhatsAppNewsPortal.Api.Ingestion.Application;
 using WhatsAppNewsPortal.Api.Ingestion.Infrastructure;
 using WhatsAppNewsPortal.Api.Sources.Application;
+using WhatsAppNewsPortal.Api.Sources.Domain;
 using WhatsAppNewsPortal.Api.Sources.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +53,7 @@ builder.Services.AddScoped<IClassificationStep, ClassificationStep>();
 // --- Articles ---
 builder.Services.AddScoped<IArticleRepository, EfArticleRepository>();
 builder.Services.AddScoped<IArticleGenerationStep, ArticleGenerationStep>();
+builder.Services.AddScoped<IArticlePublisher, ArticlePublisher>();
 
 // --- AI Generation (Gemini) ---
 builder.Services.Configure<GeminiSettings>(settings =>
@@ -100,6 +104,104 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 // --- Controller de teste ---
 app.MapGet("/api/ping", () => Results.Ok(new { message = "pong", timestamp = DateTime.UtcNow }));
+
+// --- Articles ---
+app.MapPost("/api/articles/{id:guid}/publish", async (Guid id, IArticlePublisher publisher, CancellationToken ct) =>
+{
+    try
+    {
+        var result = await publisher.PublishAsync(id, ct);
+        return Results.Ok(result);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+// --- Dev: seed a draft for manual testing (only in Development) ---
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost("/api/dev/seed-draft", async (AppDbContext db) =>
+    {
+        // Reuse existing source or create one
+        var source = await db.Sources.FirstOrDefaultAsync(s => s.Name == "WhatsApp Blog");
+        if (source is null)
+        {
+            source = new Source
+            {
+                Id = Guid.NewGuid(),
+                Name = "WhatsApp Blog",
+                Type = SourceType.Official,
+                BaseUrl = "https://blog.whatsapp.com",
+                FeedUrl = "https://blog.whatsapp.com/rss.xml",
+                IsActive = true
+            };
+            db.Sources.Add(source);
+            await db.SaveChangesAsync();
+        }
+
+        var sourceItem = new SourceItem
+        {
+            Id = Guid.NewGuid(),
+            SourceId = source.Id,
+            OriginalUrl = $"https://blog.whatsapp.com/screen-sharing-{Guid.NewGuid().ToString("N")[..8]}",
+            CanonicalUrl = "https://blog.whatsapp.com/screen-sharing-video-calls",
+            Title = "Screen Sharing on Video Calls",
+            NormalizedContent = "Today we're launching screen sharing on WhatsApp video calls.",
+            ContentHash = Guid.NewGuid().ToString("N"),
+            Status = PipelineStatus.Draft,
+            SourceClassification = "official_news"
+        };
+        db.SourceItems.Add(sourceItem);
+        await db.SaveChangesAsync();
+
+        var articleId = Guid.NewGuid();
+        var article = new Article
+        {
+            Id = articleId,
+            SourceItemId = sourceItem.Id,
+            Slug = $"whatsapp-lanca-compartilhamento-de-tela-{Guid.NewGuid().ToString("N")[..6]}",
+            Title = "WhatsApp lanca compartilhamento de tela em videochamadas para todos os usuarios",
+            Excerpt = "O WhatsApp anunciou oficialmente o recurso de compartilhamento de tela durante videochamadas, ja disponivel para Android e iOS.",
+            ContentHtml =
+                "<h2>O que e o novo recurso</h2>" +
+                "<p>O WhatsApp lancou oficialmente o compartilhamento de tela durante videochamadas. " +
+                "Com essa funcionalidade, os usuarios podem mostrar o conteudo de seus dispositivos " +
+                "em tempo real durante uma chamada de video.</p>" +
+                "<h2>Como funciona na pratica</h2>" +
+                "<p>Para usar, basta iniciar uma videochamada, tocar no icone de compartilhamento " +
+                "e selecionar \"Compartilhar tela\".</p>",
+            MetaTitle = "WhatsApp lanca compartilhamento de tela em videochamadas",
+            MetaDescription = "O WhatsApp lancou oficialmente o compartilhamento de tela durante videochamadas.",
+            Tags = ["whatsapp", "videochamada", "compartilhamento-de-tela"],
+            ArticleType = EditorialType.OfficialNews,
+            Category = "oficial",
+            Status = PipelineStatus.Draft,
+            PublishedAt = null
+        };
+        db.Articles.Add(article);
+
+        db.ArticleSourceReferences.Add(new ArticleSourceReference
+        {
+            Id = Guid.NewGuid(),
+            ArticleId = articleId,
+            SourceName = "WhatsApp Blog",
+            SourceUrl = sourceItem.OriginalUrl,
+            ReferenceType = "primary"
+        });
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new
+        {
+            message = "Draft seeded successfully. Now call POST /api/articles/{articleId}/publish",
+            articleId = article.Id,
+            slug = article.Slug,
+            status = article.Status.ToString()
+        });
+    });
+}
 
 app.Run();
 
