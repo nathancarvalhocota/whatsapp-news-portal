@@ -29,15 +29,6 @@ public static class SourceSeeder
         },
         new Source
         {
-            Id = new Guid("11111111-0000-0000-0000-000000000003"),
-            Name = "WhatsApp API Documentation",
-            Type = SourceType.Official,
-            BaseUrl = "https://developers.facebook.com/blog",
-            FeedUrl = null,
-            IsActive = true
-        },
-        new Source
-        {
             Id = new Guid("11111111-0000-0000-0000-000000000004"),
             Name = "WABetaInfo",
             Type = SourceType.BetaSpecialized,
