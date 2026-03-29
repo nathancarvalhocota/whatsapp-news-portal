@@ -1,0 +1,31 @@
+databases:
+  - name: whatsapp-news-db
+    databaseName: whatsapp_news
+    user: whatsapp_news_user
+    plan: free
+
+services:
+  - type: web
+    name: whatsapp-news-api
+    runtime: docker
+    dockerfilePath: ./apps/api-dotnet/Dockerfile
+    dockerContext: ./apps/api-dotnet
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: whatsapp-news-db
+          property: connectionString
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: RUN_MIGRATIONS_ON_STARTUP
+        value: "true"
+      - key: PIPELINE_RUN_ON_STARTUP
+        value: "true"
+      - key: PIPELINE_INTERVAL_MINUTES
+        value: "720"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
