@@ -39,9 +39,11 @@ else
 }
 
 // --- PostgreSQL + EF Core ---
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? builder.Configuration["DATABASE_URL"]
-    ?? throw new InvalidOperationException("Connection string not configured. Set ConnectionStrings__DefaultConnection or DATABASE_URL.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+    connectionString = builder.Configuration["DATABASE_URL"];
+if (string.IsNullOrEmpty(connectionString))
+    throw new InvalidOperationException("Connection string not configured. Set ConnectionStrings__DefaultConnection or DATABASE_URL.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
