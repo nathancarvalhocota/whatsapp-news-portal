@@ -13,4 +13,6 @@ WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_EnableDiagnostics=0
+ENV COMPlus_EnableDiagnostics=0
 ENTRYPOINT ["dotnet", "WhatsAppNewsPortal.Api.dll"]
