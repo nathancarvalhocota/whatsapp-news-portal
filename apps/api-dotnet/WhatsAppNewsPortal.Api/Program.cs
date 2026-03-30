@@ -196,6 +196,19 @@ app.MapGet("/api/articles/{slug}", async (
     return Results.Ok(ArticleDetailDto.FromArticle(article));
 });
 
+app.MapGet("/api/articles/by-topic/{topic}", async (
+    string topic,
+    IArticleRepository repo,
+    int page = 1,
+    int pageSize = 20,
+    CancellationToken ct = default) =>
+{
+    if (page < 1) page = 1;
+    if (pageSize < 1 || pageSize > 100) pageSize = 20;
+    var articles = await repo.GetByTopicAsync(topic, page, pageSize, ct);
+    return Results.Ok(articles.Select(ArticleSummaryDto.FromArticle));
+});
+
 app.MapGet("/api/categories/{category}", async (
     string category,
     IArticleRepository repo,
@@ -433,6 +446,7 @@ if (app.Environment.IsDevelopment())
             MetaTitle = "WhatsApp lanca compartilhamento de tela em videochamadas",
             MetaDescription = "O WhatsApp lancou oficialmente o compartilhamento de tela durante videochamadas.",
             Tags = ["whatsapp", "videochamada", "compartilhamento-de-tela"],
+            Topics = ["Novos Recursos", "Oficial"],
             ArticleType = EditorialType.OfficialNews,
             Category = "oficial",
             Status = PipelineStatus.Draft,

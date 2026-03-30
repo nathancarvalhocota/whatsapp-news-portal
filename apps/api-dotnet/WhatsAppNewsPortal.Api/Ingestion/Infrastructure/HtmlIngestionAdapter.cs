@@ -149,6 +149,15 @@ public class HtmlIngestionAdapter : IIngestionAdapter
             if (!seen.Add(normalized)) continue;
 
             var title = link.TextContent?.Trim() ?? string.Empty;
+
+            // Fallback to aria-label when text is short/generic (e.g. "Saiba mais" on blog.whatsapp.com)
+            if (title.Length < config.MinTitleLength)
+            {
+                var ariaLabel = link.GetAttribute("aria-label")?.Trim();
+                if (!string.IsNullOrEmpty(ariaLabel))
+                    title = StripAriaLabelPrefix(ariaLabel);
+            }
+
             if (string.IsNullOrEmpty(title)) continue;
             if (config.MinTitleLength > 0 && title.Length < config.MinTitleLength) continue;
 
@@ -209,6 +218,20 @@ public class HtmlIngestionAdapter : IIngestionAdapter
         }
 
         return document.Title?.Trim();
+    }
+
+    /// <summary>
+    /// Strips common prefixes from aria-label values (e.g. "Saiba mais sobre Título" → "Título").
+    /// </summary>
+    internal static string StripAriaLabelPrefix(string label)
+    {
+        string[] prefixes = ["Saiba mais sobre ", "Learn more about "];
+        foreach (var prefix in prefixes)
+        {
+            if (label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return label[prefix.Length..];
+        }
+        return label;
     }
 
     internal static string? ResolveUrl(string href, Uri? baseUri)

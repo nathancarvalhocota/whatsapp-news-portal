@@ -48,6 +48,22 @@ public class EfArticleRepository : IArticleRepository
             .ToListAsync(ct);
     }
 
+    public async Task<List<Article>> GetByTopicAsync(string topic, int page, int pageSize, CancellationToken ct = default)
+    {
+        // Topics is stored as JSON text with a value converter — LINQ Contains
+        // won't translate to SQL. For hackathon scale (< 200 articles), filter in memory.
+        var published = await _db.Articles
+            .Where(a => a.Status == PipelineStatus.Published)
+            .OrderByDescending(a => a.PublishedAt)
+            .ToListAsync(ct);
+
+        return published
+            .Where(a => a.Topics.Contains(topic))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
     public async Task<bool> ExistsBySourceItemIdAsync(Guid sourceItemId, CancellationToken ct = default)
     {
         return await _db.Articles

@@ -11,6 +11,7 @@ public class ArticleSummaryDto
     public string MetaDescription { get; set; } = string.Empty;
     public string? Category { get; set; }
     public string[] Tags { get; set; } = [];
+    public List<string> Topics { get; set; } = new();
     public string ArticleType { get; set; } = string.Empty;
     public DateTime PublishedAt { get; set; }
 
@@ -23,6 +24,7 @@ public class ArticleSummaryDto
         MetaDescription = a.MetaDescription,
         Category = a.Category,
         Tags = a.Tags,
+        Topics = a.Topics,
         ArticleType = a.ArticleType.ToString(),
         PublishedAt = a.PublishedAt ?? a.CreatedAt
     };

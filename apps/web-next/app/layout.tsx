@@ -63,23 +63,7 @@ export default function RootLayout({
               </div>
             </a>
 
-            {/* Nav */}
-            <nav className="flex items-center gap-1 text-sm font-medium">
-              <a
-                href="/categorias/oficial"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-gray-600 hover:text-green-700 hover:bg-green-50 transition-colors"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                Oficial
-              </a>
-              <a
-                href="/categorias/beta"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-gray-600 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-                Beta
-              </a>
-            </nav>
+            {/* Nav removido — navegação por tópicos/categorias fica na home */}
           </div>
         </header>
 
@@ -115,19 +99,12 @@ export default function RootLayout({
                 </p>
               </div>
 
-              {/* Links */}
               <div className="flex flex-col gap-2 text-sm">
                 <a
-                  href="/categorias/oficial"
-                  className="text-gray-500 hover:text-green-700 transition-colors"
+                  href="/admin"
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  Notícias Oficiais
-                </a>
-                <a
-                  href="/categorias/beta"
-                  className="text-gray-500 hover:text-amber-700 transition-colors"
-                >
-                  Recursos Beta
+                  Painel Admin
                 </a>
               </div>
             </div>
@@ -138,12 +115,6 @@ export default function RootLayout({
               <span>
                 © {new Date().getFullYear()} WhatsApp News. Conteúdo gerado por IA.
               </span>
-              <a
-                href="/admin"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Admin
-              </a>
             </div>
             <div className="flex justify-end text-xs text-gray-400">
               <span className="flex items-center gap-1.5">

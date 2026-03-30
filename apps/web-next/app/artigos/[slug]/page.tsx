@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getArticleBySlug } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { getDisplayTopics, topicToSlug } from '@/lib/topics';
 import type { Metadata } from 'next';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -106,7 +107,7 @@ export default async function ArticlePage({ params }: Props) {
           </h1>
 
           {/* Badge e metadados */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             {isBeta ? (
               <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">
                 Beta / Em testes
@@ -116,11 +117,15 @@ export default async function ArticlePage({ params }: Props) {
                 Anúncio Oficial
               </Badge>
             )}
-            {article.category && (
-              <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-                {article.category}
-              </span>
-            )}
+            {getDisplayTopics(article.topics ?? []).map((topic) => (
+              <a
+                key={topic}
+                href={`/topicos/${topicToSlug(topic)}`}
+                className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors"
+              >
+                {topic}
+              </a>
+            ))}
             <time
               dateTime={article.publishedAt}
               className="text-sm text-gray-400 ml-auto"

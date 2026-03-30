@@ -8,6 +8,7 @@ export interface ArticleSummary {
   metaDescription: string;
   category: string | null;
   tags: string[];
+  topics: string[];
   articleType: string;
   publishedAt: string;
 }
@@ -28,6 +29,7 @@ export interface ArticleDetail {
   schemaJsonLd: string | null;
   category: string | null;
   tags: string[];
+  topics: string[];
   articleType: string;
   publishedAt: string;
   sourceReferences: SourceReference[];
@@ -73,6 +75,17 @@ export async function getArticlesByCategory(
 ): Promise<ArticleSummary[]> {
   return apiFetch<ArticleSummary[]>(
     `/api/categories/${category}?page=${page}&pageSize=${pageSize}`,
+    { next: { revalidate: 60 } },
+  );
+}
+
+export async function getArticlesByTopic(
+  topic: string,
+  page = 1,
+  pageSize = 20,
+): Promise<ArticleSummary[]> {
+  return apiFetch<ArticleSummary[]>(
+    `/api/articles/by-topic/${encodeURIComponent(topic)}?page=${page}&pageSize=${pageSize}`,
     { next: { revalidate: 60 } },
   );
 }

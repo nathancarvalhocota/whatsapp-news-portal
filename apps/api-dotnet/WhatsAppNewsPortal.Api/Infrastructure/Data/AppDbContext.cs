@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using WhatsAppNewsPortal.Api.Articles.Domain;
 using WhatsAppNewsPortal.Api.Common;
 using WhatsAppNewsPortal.Api.Sources.Domain;
@@ -102,6 +104,14 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SchemaJsonLd).HasColumnType("text");
             entity.Property(e => e.Category).HasMaxLength(100);
             entity.Property(e => e.Tags).HasColumnType("text[]");
+            entity.Property(e => e.Topics).HasColumnType("text")
+                  .HasConversion(
+                      v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                      v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                  .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                      (a, b) => a != null && b != null && a.SequenceEqual(b),
+                      c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                      c => c.ToList()));
             entity.Property(e => e.ArticleType).IsRequired()
                   .HasConversion<string>().HasMaxLength(50);
             entity.Property(e => e.Status).IsRequired()

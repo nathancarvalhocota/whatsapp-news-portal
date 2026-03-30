@@ -33,6 +33,12 @@ public class GeminiArticleGenerator : IAiArticleGenerator
         _logger = logger;
     }
 
+    private static readonly HashSet<string> ValidTopics = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "WhatsApp Business", "API Oficial", "Privacidade", "Segurança",
+        "Novos Recursos", "Dicas de Uso", "Atualizações"
+    };
+
     public async Task<GeneratedArticleDto> GenerateArticleAsync(
         NormalizedItemDto item,
         ClassificationResultDto classification,
@@ -71,12 +77,35 @@ public class GeminiArticleGenerator : IAiArticleGenerator
         }
 
         EnforceBetaRules(isBeta, result);
+        EnforceTopics(item.SourceType, result);
 
         _logger.LogInformation(
-            "Article generated: title={Title}, contentLength={Length}",
-            result.Title, result.ContentHtml?.Length ?? 0);
+            "Article generated: title={Title}, contentLength={Length}, topics={Topics}",
+            result.Title, result.ContentHtml?.Length ?? 0, string.Join(", ", result.Topics ?? []));
 
         return result;
+    }
+
+    private static void EnforceTopics(SourceType sourceType, GeneratedArticleDto result)
+    {
+        // Filter AI-returned topics to only valid ones (case-insensitive match, preserve canonical casing)
+        var filtered = new List<string>();
+        if (result.Topics is not null)
+        {
+            foreach (var topic in result.Topics)
+            {
+                var match = ValidTopics.FirstOrDefault(v => v.Equals(topic, StringComparison.OrdinalIgnoreCase));
+                if (match is not null)
+                    filtered.Add(match);
+            }
+        }
+
+        // Always add the source-based topic
+        var sourceTopic = sourceType == SourceType.BetaSpecialized ? "BetaSpecialized" : "Oficial";
+        if (!filtered.Contains(sourceTopic))
+            filtered.Add(sourceTopic);
+
+        result.Topics = filtered;
     }
 
     private static void EnforceBetaRules(bool isBeta, GeneratedArticleDto result)
@@ -118,8 +147,19 @@ public class GeminiArticleGenerator : IAiArticleGenerator
               "title": "título final do artigo em PT-BR",
               "excerpt": "resumo curto em PT-BR (2-3 frases)",
               "contentHtml": "corpo do artigo em HTML com H2/H3",
-              "betaDisclaimer": "parágrafo de aviso beta" ou null
+              "betaDisclaimer": "parágrafo de aviso beta" ou null,
+              "topics": ["tópico1", "tópico2"]
             }
+
+            TÓPICOS: Escolha os tópicos relevantes APENAS desta lista:
+            - WhatsApp Business
+            - API Oficial
+            - Privacidade
+            - Segurança
+            - Novos Recursos
+            - Dicas de Uso
+            - Atualizações
+            Retorne no campo "topics" como array de strings. Escolha entre 1 e 3 tópicos que melhor descrevem o conteúdo.
 
             REGRAS DE ESCRITA:
             - O artigo deve ser ORIGINAL — NÃO tradução, cópia ou paráfrase rasa.
@@ -129,6 +169,7 @@ public class GeminiArticleGenerator : IAiArticleGenerator
             - Use <p> para parágrafos.
             - NÃO inclua tag H1 (será adicionada pelo sistema).
             - NÃO invente dados, datas ou funcionalidades não mencionadas no conteúdo.
+            - O título segue as regras do português brasileiro: apenas a primeira palavra e nomes próprios (empresas, países, tecnologias, produtos) em maiúsculo. NÃO use Title Case.
             {{betaRule}}
             """;
     }

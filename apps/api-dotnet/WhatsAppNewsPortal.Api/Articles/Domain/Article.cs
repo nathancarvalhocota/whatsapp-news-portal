@@ -15,6 +15,7 @@ public class Article
     public string? SchemaJsonLd { get; set; }
     public string? Category { get; set; }
     public string[] Tags { get; set; } = [];
+    public List<string> Topics { get; set; } = new();
     public EditorialType ArticleType { get; set; }
     public PipelineStatus Status { get; set; } = PipelineStatus.Draft;
     public DateTime? PublishedAt { get; set; }

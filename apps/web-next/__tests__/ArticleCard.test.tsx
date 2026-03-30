@@ -11,6 +11,7 @@ const base: ArticleSummary = {
   metaDescription: 'Meta description',
   category: 'oficial',
   tags: ['whatsapp'],
+  topics: ['Novos Recursos', 'Oficial'],
   articleType: 'OfficialNews',
   publishedAt: '2024-06-15T10:00:00Z',
 };
@@ -42,13 +43,14 @@ describe('ArticleCard', () => {
     expect(link).toHaveAttribute('href', `/artigos/${base.slug}`);
   });
 
-  it('exibe a categoria quando presente', () => {
+  it('exibe badges de tópicos temáticos', () => {
     render(<ArticleCard article={base} />);
-    expect(screen.getByText('oficial')).toBeInTheDocument();
+    expect(screen.getByText('Novos Recursos')).toBeInTheDocument();
   });
 
-  it('não exibe categoria quando ausente', () => {
-    render(<ArticleCard article={{ ...base, category: null }} />);
-    expect(screen.queryByText('oficial')).not.toBeInTheDocument();
+  it('não exibe tópicos de fonte como badge extra', () => {
+    render(<ArticleCard article={base} />);
+    const badges = screen.queryAllByText('Oficial');
+    expect(badges).toHaveLength(1); // apenas a badge verde, não o tópico
   });
 });

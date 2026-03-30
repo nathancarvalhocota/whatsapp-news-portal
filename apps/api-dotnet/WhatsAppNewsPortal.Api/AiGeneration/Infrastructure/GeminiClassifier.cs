@@ -126,6 +126,7 @@ public class GeminiClassifier : IAiClassifier
         - Tags devem incluir "whatsapp" e ser relevantes ao conteúdo.
         - Se não for relevante ao ecossistema WhatsApp, isRelevant = false com discardReason.
         - NUNCA invente informações não presentes no conteúdo.
+        - Títulos seguem as regras do português brasileiro: apenas a primeira palavra e nomes próprios (empresas, países, tecnologias, produtos) em maiúsculo. NÃO use Title Case.
         """;
 
     private const string SystemInstruction =
