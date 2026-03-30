@@ -39,29 +39,31 @@ export default async function HomePage() {
           Atualizações oficiais, recursos em beta e novidades. 
         </p>
 
-        <div className="flex flex-wrap gap-2.5 mt-6 text-sm">
-          <a
-            href="/categorias/oficial"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors border border-green-200"
-          >
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-            Notícias Oficiais
-          </a>
-          <a
-            href="/categorias/beta"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 text-amber-800 font-medium hover:bg-amber-100 transition-colors border border-amber-200"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-            Recursos Beta
-          </a>
-          <a href="/topicos/novos-recursos" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Novos Recursos</a>
-          <a href="/topicos/whatsapp-business" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">WhatsApp Business</a>
-          <a href="/topicos/seguranca" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Seguranca</a>
-          <a href="/topicos/privacidade" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Privacidade</a>
-          <a href="/topicos/atualizacoes" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Atualizacoes</a>
-          <a href="/topicos/api-oficial" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">API Oficial</a>
-          <a href="/topicos/dicas-de-uso" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Dicas de Uso</a>
-        </div>
+        {articles.length > 0 && (
+          <div className="flex flex-wrap gap-2.5 mt-6 text-sm">
+            <a
+              href="/categorias/oficial"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-green-50 text-green-800 font-medium hover:bg-green-100 transition-colors border border-green-200"
+            >
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+              Notícias Oficiais
+            </a>
+            <a
+              href="/categorias/beta"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 text-amber-800 font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+              Recursos Beta
+            </a>
+            <a href="/topicos/novos-recursos" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Novos Recursos</a>
+            <a href="/topicos/whatsapp-business" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">WhatsApp Business</a>
+            <a href="/topicos/seguranca" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Seguranca</a>
+            <a href="/topicos/privacidade" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Privacidade</a>
+            <a href="/topicos/atualizacoes" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Atualizacoes</a>
+            <a href="/topicos/api-oficial" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">API Oficial</a>
+            <a href="/topicos/dicas-de-uso" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Dicas de Uso</a>
+          </div>
+        )}
       </section>
 
       <Separator />
