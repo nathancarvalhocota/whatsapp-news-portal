@@ -35,7 +35,6 @@ Portal de conteúdo em português do Brasil, 100% dedicado ao ecossistema WhatsA
 
 - Blog oficial do WhatsApp
 - Blog oficial do WhatsApp Business
-- Documentação oficial da API / WhatsApp Business Platform
 - WABetaInfo *(tratado como beta/em testes)*
 
 ## Desenvolvimento local
@@ -73,6 +72,30 @@ A documentação completa do projeto está em `/docs/`:
 - [Objetivos de Entrega](docs/03-objetivos-de-entrega.md)
 - [Plano de Implementação](docs/04-plano-de-implementacao.md)
 - [Progresso](docs/PROGRESS.md)
+
+## Nota para os jurados
+
+O portal está no ar, mas **a página inicial não exibe artigos ainda** — isso é intencional.
+
+Para ver o pipeline funcionando em tempo real, siga os passos abaixo:
+
+1. Acesse a página de **Admin** (link no rodapé do site, ou `/admin` direto na URL)
+2. Faça login com a senha: `hackathon`
+3. Altere o intervalo de monitoramento para **1 minuto**
+4. Aguarde o próximo ciclo — o sistema irá buscar as fontes, detectar novos conteúdos, gerar os artigos com IA e publicá-los automaticamente no portal
+
+Dessa forma é possível acompanhar o fluxo ponta a ponta sem precisar esperar uma nova publicação surgir organicamente nas fontes monitoradas.
+
+### Alternativa: processar uma URL diretamente
+
+Na mesma página de Admin há uma seção **"Demo Pipeline"** que permite forçar o processamento de um artigo específico. Basta colar a URL completa de um post de uma das fontes monitoradas e clicar em **"Rodar Demo"** — o sistema irá buscar o conteúdo, gerar o artigo com IA e deixá-lo disponível para publicação imediata.
+
+> **Atenção:** a URL precisa pertencer a uma das fontes aceitas. URLs de outros domínios são rejeitadas.
+>
+> Fontes válidas:
+> - `blog.whatsapp.com`
+> - `business.whatsapp.com`
+> - `wabetainfo.com`
 
 ---
 

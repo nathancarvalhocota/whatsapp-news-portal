@@ -339,60 +339,56 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
 
 ---
 
-## Tarefa 29 — Deploy do banco no Render Postgres
-- **Status:** pendente
+## Tarefa 29 — Deploy do banco e back-end .NET no Render
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
+  - `apps/api-dotnet/Dockerfile` — multi-stage build SDK 10.0 → aspnet:10.0; porta 8080
+  - `render.yaml` — Blueprint: PostgreSQL free + Web Service Docker; `DATABASE_URL` via `fromDatabase`; `RUN_MIGRATIONS_ON_STARTUP=true`
+  - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — fallback `DATABASE_URL` corrigido (`string.IsNullOrEmpty` em vez de `??`); conversor URI `postgres://` → ADO.NET Npgsql com SSL; porta default 5432
+- **Correções durante o deploy:**
+  1. `appsettings.json` com `"DefaultConnection": ""` bloqueava fallback para `DATABASE_URL`
+  2. Render injeta URI sem porta → `uri.Port = -1` → Npgsql rejeitava; corrigido com default 5432
+  3. URI `postgres://` não suportada pelo ADO.NET → adicionado conversor para formato `Host=;Port=;...`
 - **Validação manual:**
+  - `GET /health` → `{"status":"healthy","environment":"Production"}`
+  - `GET /api/articles/published` → artigos retornados
+  - Migrations aplicadas automaticamente no startup
+  - Source `WhatsApp API Documentation` removida do seeder e deletada do banco via pgAdmin
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - Cold start ~30s no plano free (tolerado)
+  - `CORS_ORIGIN` no Render deve sempre apontar para a URL de produção da Vercel
+- **Data de conclusão:** 2026-03-29
 
 ---
 
-## Tarefa 30 — Deploy do back-end .NET no Render
-- **Status:** pendente
+## Tarefa 30 — Deploy do front-end Next.js na Vercel
+- **Status:** concluída
 - **Arquivos criados/alterados:**
-- **Testes criados/executados:**
+  - `apps/web-next/next.config.ts` — removido `output: 'standalone'` (incompatível com Vercel)
+  - `apps/web-next/package.json` — Next.js atualizado: 15.2.4 → 15.3.0 (CVE-2025-29927) → latest (CVE-2025-66478)
+  - `apps/web-next/lib/api.ts` — `AbortSignal.timeout(8000)` somente durante build (`NEXT_PHASE === 'phase-production-build'`); runtime sem timeout para tolerar cold start do Render
+  - `apps/web-next/app/api/admin/auth/route.ts` — Route Handler server-side para autenticação do admin; lê `ADMIN_SECRET` sem `NEXT_PUBLIC_`
+  - `apps/web-next/app/admin/page.tsx` — removida senha do bundle client; `handleLogin` chama `POST /api/admin/auth`
+  - `apps/web-next/.env.example` — `NEXT_PUBLIC_ADMIN_SECRET` → `ADMIN_SECRET`
+  - `apps/web-next/app/icon.svg` — favicon: chat bubble verde com linhas de texto
+  - `apps/web-next/app/layout.tsx` — link "Admin" adicionado no footer
+- **Correções durante o deploy:**
+  1. Next.js 15.2.4 bloqueado pela Vercel (CVE-2025-29927)
+  2. Next.js 15.3.0 com nova CVE (CVE-2025-66478) → atualizado para latest
+  3. Build timeout: páginas tentavam gerar estaticamente com API em cold start → `AbortSignal.timeout(8000)` só no build
+  4. `CORS_ORIGIN` apontava para URL de preview da Vercel em vez da URL de produção
+  5. `NEXT_PUBLIC_ADMIN_SECRET` exposta no bundle → movida para Route Handler server-side
+- **Variáveis de ambiente na Vercel:**
+  - `NEXT_PUBLIC_API_URL` — URL do Render (sem barra final)
+  - `NEXT_PUBLIC_SITE_URL` — URL de produção da Vercel (sem barra final)
+  - `ADMIN_SECRET` — senha do admin (server-side)
 - **Validação manual:**
+  - Home pública com artigos publicados
+  - Páginas `/artigos/[slug]` acessíveis
+  - Sitemap em `/sitemap.xml` com URLs dos artigos
+  - Favicon visível na aba do browser
+  - `/admin` com autenticação server-side funcionando
 - **Riscos/pendências:**
-- **Data de conclusão:**
+  - Admin faz chamadas do browser para o Render → `CORS_ORIGIN` deve estar correto
+- **Data de conclusão:** 2026-03-29
 
----
-
-## Tarefa 31 — Deploy do front-end Next.js na Vercel
-- **Status:** pendente
-- **Arquivos criados/alterados:**
-- **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
-
----
-
-## Tarefa 32 — Validar fluxo real ponta a ponta em produção
-- **Status:** pendente
-- **Arquivos criados/alterados:**
-- **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
-
----
-
-## Tarefa 33 — Validar modo demo em produção
-- **Status:** pendente
-- **Arquivos criados/alterados:**
-- **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**
-
----
-
-## Tarefa 34 — Revisão final de qualidade editorial, UX e confiabilidade
-- **Status:** pendente
-- **Arquivos criados/alterados:**
-- **Testes criados/executados:**
-- **Validação manual:**
-- **Riscos/pendências:**
-- **Data de conclusão:**

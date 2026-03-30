@@ -53,7 +53,7 @@ export default function AdminPage() {
 
   // Settings
   const [settings, setSettings] = useState<PipelineSettings | null>(null);
-  const [settingsForm, setSettingsForm] = useState({ intervalMinutes: '', minPublishedDate: '', autoPublishDrafts: true });
+  const [settingsForm, setSettingsForm] = useState({ intervalMinutes: '', autoPublishDrafts: true });
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState('');
@@ -94,7 +94,6 @@ export default function AdminPage() {
       setSettings(data);
       setSettingsForm({
         intervalMinutes: String(data.intervalMinutes),
-        minPublishedDate: data.minPublishedDate,
         autoPublishDrafts: data.autoPublishDrafts,
       });
     } catch {
@@ -134,7 +133,6 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           intervalMinutes: settingsForm.intervalMinutes ? Number(settingsForm.intervalMinutes) : undefined,
-          minPublishedDate: settingsForm.minPublishedDate || undefined,
           autoPublishDrafts: settingsForm.autoPublishDrafts,
         }),
       });
@@ -237,30 +235,17 @@ export default function AdminPage() {
           <p className="text-sm text-gray-400">Carregando...</p>
         ) : (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Intervalo (minutos)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={settingsForm.intervalMinutes}
-                  onChange={(e) => setSettingsForm((f) => ({ ...f, intervalMinutes: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Data mínima (corte)
-                </label>
-                <input
-                  type="date"
-                  value={settingsForm.minPublishedDate}
-                  onChange={(e) => setSettingsForm((f) => ({ ...f, minPublishedDate: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
+            <div className="w-48">
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Intervalo (minutos)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={settingsForm.intervalMinutes}
+                onChange={(e) => setSettingsForm((f) => ({ ...f, intervalMinutes: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -269,7 +254,12 @@ export default function AdminPage() {
                 onChange={(e) => setSettingsForm((f) => ({ ...f, autoPublishDrafts: e.target.checked }))}
                 className="rounded border-gray-300 text-green-600 focus:ring-green-500"
               />
-              <span className="text-sm text-gray-700">Publicar automaticamente novos artigos</span>
+              <span
+                className="text-sm text-gray-700"
+                title="Se desmarcado, os artigos ficam como draft — visíveis na seção abaixo para publicação manual."
+              >
+                Publicar automaticamente novos artigos
+              </span>
             </label>
             <div className="flex items-center gap-3">
               <button
@@ -286,7 +276,7 @@ export default function AdminPage() {
               )}
               {settings && (
                 <span className="text-xs text-gray-400 ml-auto">
-                  Atual: {settings.intervalMinutes}min / {settings.minPublishedDate} / {settings.autoPublishDrafts ? 'auto-pub' : 'manual'}
+                  Atual: {settings.intervalMinutes}min / {settings.autoPublishDrafts ? 'auto-pub' : 'manual'}
                 </span>
               )}
             </div>

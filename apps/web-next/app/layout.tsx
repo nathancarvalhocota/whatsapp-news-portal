@@ -134,6 +134,15 @@ export default function RootLayout({
 
             <Separator className="my-6" />
 
+            <div className="flex justify-center mb-3">
+              <a
+                href="/admin"
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Admin
+              </a>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
               <span>
                 © {new Date().getFullYear()} WhatsApp News. Conteúdo gerado por IA.
