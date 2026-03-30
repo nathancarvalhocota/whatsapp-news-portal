@@ -14,6 +14,7 @@ public class ArticleDetailDto
     public string? SchemaJsonLd { get; set; }
     public string? Category { get; set; }
     public string[] Tags { get; set; } = [];
+    public List<string> Topics { get; set; } = new();
     public string ArticleType { get; set; } = string.Empty;
     public DateTime PublishedAt { get; set; }
     public List<SourceReferenceDto> SourceReferences { get; set; } = [];
@@ -30,6 +31,7 @@ public class ArticleDetailDto
         SchemaJsonLd = a.SchemaJsonLd,
         Category = a.Category,
         Tags = a.Tags,
+        Topics = a.Topics,
         ArticleType = a.ArticleType.ToString(),
         PublishedAt = a.PublishedAt ?? a.CreatedAt,
         SourceReferences = a.SourceReferences

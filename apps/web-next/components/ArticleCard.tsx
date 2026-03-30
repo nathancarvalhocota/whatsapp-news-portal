@@ -1,6 +1,7 @@
 import type { ArticleSummary } from '@/lib/api';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getDisplayTopics, topicToSlug } from '@/lib/topics';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', {
@@ -17,6 +18,7 @@ interface Props {
 
 export function ArticleCard({ article, featured = false }: Props) {
   const isBeta = article.articleType === 'BetaNews';
+  const displayTopics = getDisplayTopics(article.topics ?? []);
 
   return (
     <a
@@ -25,7 +27,7 @@ export function ArticleCard({ article, featured = false }: Props) {
     >
       <Card className="h-full bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border border-gray-100">
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
             {isBeta ? (
               <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">
                 Beta
@@ -35,11 +37,14 @@ export function ArticleCard({ article, featured = false }: Props) {
                 Oficial
               </Badge>
             )}
-            {article.category && (
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">
-                {article.category}
+            {displayTopics.map((topic) => (
+              <span
+                key={topic}
+                className="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-medium border border-blue-100"
+              >
+                {topic}
               </span>
-            )}
+            ))}
           </div>
           <h2
             className={`font-bold leading-snug text-gray-900 group-hover:text-green-700 transition-colors ${

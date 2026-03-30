@@ -282,6 +282,8 @@ public class ArticleEndpointTests
 
         public Task<List<Article>> GetByCategoryAsync(string category, int page, int pageSize, CancellationToken ct = default)
             => Task.FromResult(_byCategory);
+        public Task<List<Article>> GetByTopicAsync(string topic, int page, int pageSize, CancellationToken ct = default)
+            => Task.FromResult(new List<Article>());
 
         public Task<bool> ExistsBySourceItemIdAsync(Guid sourceItemId, CancellationToken ct = default)
             => Task.FromResult(false);

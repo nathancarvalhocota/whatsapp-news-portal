@@ -392,3 +392,52 @@ Este arquivo registra o progresso de cada tarefa do plano de implementação (a 
   - Admin faz chamadas do browser para o Render → `CORS_ORIGIN` deve estar correto
 - **Data de conclusão:** 2026-03-29
 
+---
+
+## Tópicos temáticos nos artigos
+- **Status:** concluída
+- **Branch:** topics
+- **Arquivos criados/alterados:**
+  - **Back-end:**
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Domain/Article.cs` — adicionada propriedade `Topics` (`List<string>`, default vazio)
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Infrastructure/Data/AppDbContext.cs` — `Topics` configurado como `text` com `HasConversion` JSON + `ValueComparer` para change tracking correto
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Infrastructure/Data/Migrations/..._AddTopicsToArticle.cs` — migration adicionando coluna `Topics` (nullable text)
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Application/GeneratedArticleDto.cs` — adicionado campo `Topics` (`List<string>?`)
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/AiGeneration/Infrastructure/GeminiArticleGenerator.cs` — prompt atualizado pedindo tópicos da lista fixa; `EnforceTopics()` filtra apenas tópicos válidos e sempre adiciona tópico de fonte (`Oficial`/`BetaSpecialized`) baseado no `SourceType`
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/ArticleGenerationStep.cs` — passa `generated.Topics` para o `Article` ao criar draft
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/ArticleSummaryDto.cs` — adicionado campo `Topics`
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/ArticleDetailDto.cs` — adicionado campo `Topics`
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Application/IArticleRepository.cs` — adicionado `GetByTopicAsync`
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Articles/Infrastructure/EfArticleRepository.cs` — implementação `GetByTopicAsync` (filtra em memória — OK para escala hackathon)
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api/Program.cs` — adicionado `GET /api/articles/by-topic/{topic}` endpoint; seed-draft atualizado com Topics
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticleGenerationStepTests.cs` — fake atualizado com `GetByTopicAsync`
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticlePublisherTests.cs` — fake atualizado
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/ArticleEndpointTests.cs` — fake atualizado
+    - `apps/api-dotnet/WhatsAppNewsPortal.Api.Tests/DeduplicationServiceTests.cs` — fake atualizado
+  - **Front-end:**
+    - `apps/web-next/lib/api.ts` — adicionado `topics: string[]` nas interfaces `ArticleSummary` e `ArticleDetail`; adicionada função `getArticlesByTopic()`
+    - `apps/web-next/lib/topics.ts` — criado; configuração de tópicos (slug, label, description), funções `topicToSlug`, `slugToTopic`, `getDisplayTopics`
+    - `apps/web-next/components/ArticleCard.tsx` — badges de tópicos (azul, clicáveis → `/topicos/{slug}`)
+    - `apps/web-next/app/artigos/[slug]/page.tsx` — badges de tópicos na página de artigo (clicáveis)
+    - `apps/web-next/app/topicos/[topico]/page.tsx` — criado; SSG com `generateStaticParams` (9 tópicos pré-gerados); breadcrumb, SEO, grid de artigos
+    - `apps/web-next/__tests__/ArticleCard.test.tsx` — fixture atualizada com `topics`
+    - `apps/web-next/__tests__/ArticlePage.test.tsx` — fixture atualizada com `topics`
+    - `apps/web-next/__tests__/CategoryPage.test.tsx` — fixture atualizada com `topics`
+- **Tópicos possíveis (lista fixa):**
+  - `WhatsApp Business`, `API Oficial`, `Privacidade`, `Segurança`, `Novos Recursos`, `Dicas de Uso`, `Atualizações` — escolhidos pela IA
+  - `Oficial`, `BetaSpecialized` — atribuídos automaticamente pelo pipeline baseado no `Source.Type`
+- **Testes criados/executados:**
+  - `dotnet build` — 0 erros, 0 avisos
+  - `dotnet test` — 240 aprovados (15 falhas pré-existentes: HealthAndPing/ArticleEndpoint sem DB, SourceSeeder com contagem desatualizada)
+  - `npm run build` — 0 erros; 9 rotas `/topicos/*` pré-geradas via SSG
+  - `npm test` — 23 testes passando (4 suites)
+- **Decisões técnicas:**
+  - Topics armazenados como JSON text (não jsonb) com `HasConversion` — simples, suficiente para escala hackathon
+  - `GetByTopicAsync` filtra em memória após carregar publicados — LINQ `Contains` não traduz com value converter JSON
+  - Badges de tópico exibem apenas tópicos temáticos (exclui Oficial/BetaSpecialized que já têm badge própria)
+  - Endpoint `GET /api/articles/by-topic/{topic}` usa o label exato (ex: `WhatsApp Business`) URL-encoded
+- **Riscos/pendências:**
+  - Artigos existentes no banco não têm tópicos (coluna vazia/null) — só artigos gerados após esta alteração terão tópicos
+  - Migration precisa ser aplicada no Render (automática via `RUN_MIGRATIONS_ON_STARTUP=true`)
+- **Data de conclusão:** 2026-03-29
+

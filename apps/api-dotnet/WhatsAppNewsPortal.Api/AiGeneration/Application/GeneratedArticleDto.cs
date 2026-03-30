@@ -21,4 +21,7 @@ public class GeneratedArticleDto
     /// Must be null/empty for official sources.
     /// </summary>
     public string? BetaDisclaimer { get; set; }
+
+    /// <summary>Thematic topics chosen by the AI from the allowed list.</summary>
+    public List<string>? Topics { get; set; }
 }

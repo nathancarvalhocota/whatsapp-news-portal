@@ -27,6 +27,7 @@ const mockArticle: ArticleSummary = {
   metaDescription: 'Meta.',
   category: 'oficial',
   tags: ['whatsapp'],
+  topics: ['Novos Recursos', 'Oficial'],
   articleType: 'OfficialNews',
   publishedAt: '2024-06-15T10:00:00Z',
 };

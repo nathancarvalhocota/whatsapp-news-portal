@@ -31,6 +31,7 @@ const mockArticle: ArticleDetail = {
   schemaJsonLd: null,
   category: 'oficial',
   tags: ['whatsapp', 'novidade'],
+  topics: ['Novos Recursos', 'Oficial'],
   articleType: 'OfficialNews',
   publishedAt: '2024-06-15T10:00:00Z',
   sourceReferences: [

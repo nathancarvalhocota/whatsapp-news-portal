@@ -97,6 +97,7 @@ public class ArticleGenerationStep : IArticleGenerationStep
             MetaTitle = classification.MetaTitle,
             MetaDescription = classification.MetaDescription,
             Tags = classification.Tags,
+            Topics = generated.Topics ?? new List<string>(),
             ArticleType = classification.EditorialType,
             Status = PipelineStatus.Draft,
             Category = classification.EditorialType == EditorialType.BetaNews

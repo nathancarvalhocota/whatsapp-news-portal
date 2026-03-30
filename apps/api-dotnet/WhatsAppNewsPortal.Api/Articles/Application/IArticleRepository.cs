@@ -8,6 +8,7 @@ public interface IArticleRepository
     Task<Article?> GetBySlugAsync(string slug, CancellationToken ct = default);
     Task<List<Article>> GetPublishedAsync(int page, int pageSize, CancellationToken ct = default);
     Task<List<Article>> GetByCategoryAsync(string category, int page, int pageSize, CancellationToken ct = default);
+    Task<List<Article>> GetByTopicAsync(string topic, int page, int pageSize, CancellationToken ct = default);
     Task<bool> ExistsBySourceItemIdAsync(Guid sourceItemId, CancellationToken ct = default);
     Task AddAsync(Article article, CancellationToken ct = default);
     Task UpdateAsync(Article article, CancellationToken ct = default);
