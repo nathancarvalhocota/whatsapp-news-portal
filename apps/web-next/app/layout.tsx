@@ -134,28 +134,28 @@ export default function RootLayout({
 
             <Separator className="my-6" />
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400 mb-1">
               <span>
                 © {new Date().getFullYear()} WhatsApp News. Conteúdo gerado por IA.
               </span>
-              <span className="flex items-center gap-3">
+              <a
+                href="/admin"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Admin
+              </a>
+            </div>
+            <div className="flex justify-end text-xs text-gray-400">
+              <span className="flex items-center gap-1.5">
+                Desenvolvido para o hackathon{' '}
                 <a
-                  href="/admin"
-                  className="hover:text-gray-600 transition-colors"
+                  href="https://umbler.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  Admin
+                  Umbler
                 </a>
-                <span className="flex items-center gap-1.5">
-                  Desenvolvido para o hackathon{' '}
-                  <a
-                    href="https://umbler.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-gray-600 hover:text-gray-800 transition-colors"
-                  >
-                    Umbler
-                  </a>
-                </span>
               </span>
             </div>
           </div>
