@@ -75,7 +75,8 @@ A documentação completa do projeto está em `/docs/`:
 
 ## Nota para os jurados
 
-O portal está no ar, mas **a página inicial não exibe artigos ainda** — isso é intencional.
+O portal está no ar, mas **a página inicial exibe APENAS DOIS ARTIGOS** — isso é intencional. 
+Mantive dessa forma para que fosse possível acompanhar o fluxo ponta a ponta sem precisar esperar uma nova publicação surgir organicamente nas fontes monitoradas.
 
 Para ver o pipeline funcionando em tempo real, siga os passos abaixo:
 
@@ -83,8 +84,6 @@ Para ver o pipeline funcionando em tempo real, siga os passos abaixo:
 2. Faça login com a senha: `hackathon`
 3. Altere o intervalo de monitoramento para **1 minuto**
 4. Aguarde o próximo ciclo — o sistema irá buscar as fontes, detectar novos conteúdos, gerar os artigos com IA e publicá-los automaticamente no portal
-
-Dessa forma é possível acompanhar o fluxo ponta a ponta sem precisar esperar uma nova publicação surgir organicamente nas fontes monitoradas.
 
 ### Alternativa: processar uma URL diretamente
 
