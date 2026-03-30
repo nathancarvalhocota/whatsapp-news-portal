@@ -55,13 +55,13 @@ export default async function HomePage() {
               <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
               Recursos Beta
             </a>
-            <a href="/topicos/novos-recursos" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Novos Recursos</a>
+            <a href="/topicos/novos-recursos" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Novos recursos</a>
             <a href="/topicos/whatsapp-business" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">WhatsApp Business</a>
-            <a href="/topicos/seguranca" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Seguranca</a>
+            <a href="/topicos/seguranca" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Segurança</a>
             <a href="/topicos/privacidade" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Privacidade</a>
-            <a href="/topicos/atualizacoes" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Atualizacoes</a>
+            <a href="/topicos/atualizacoes" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Atualizações</a>
             <a href="/topicos/api-oficial" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">API Oficial</a>
-            <a href="/topicos/dicas-de-uso" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Dicas de Uso</a>
+            <a href="/topicos/dicas-de-uso" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors border border-blue-200">Dicas de uso</a>
           </div>
         )}
       </section>
